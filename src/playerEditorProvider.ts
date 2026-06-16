@@ -1,10 +1,9 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
-import * as os from 'os';
 import * as path from 'path';
 import * as crypto from 'crypto';
-import { execFile } from 'child_process';
 import { StreamServer } from './streamServer';
+import { findFfmpeg, extractAudio } from './audio';
 
 /**
  * Custom editor that plays .mp4/.mov/.m4v files WITH sound inside VS Code.
@@ -15,14 +14,6 @@ import { StreamServer } from './streamServer';
  */
 export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider {
     public static readonly viewType = 'unmuteVideo.viewer';
-
-    /**
-     * Cached ffmpeg discovery result.
-     *   undefined -> not yet probed
-     *   null      -> probed, none found
-     *   string    -> probed, this binary works
-     */
-    private static ffmpegPath: string | null | undefined = undefined;
 
     constructor(
         private readonly context: vscode.ExtensionContext,
@@ -66,7 +57,7 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
 
         // Probe ffmpeg up front (cached) so we can tell the webview whether to
         // expect an audio track at all.
-        const ffmpeg = await PlayerEditorProvider.findFfmpeg();
+        const ffmpeg = await findFfmpeg();
 
         const messageListener = webview.onDidReceiveMessage(async (message: any) => {
             if (!message || typeof message.type !== 'string') {
@@ -86,7 +77,7 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
                     if (ffmpeg !== null) {
                         // Extract (or reuse) the MP3 in the background; never block
                         // the video from starting.
-                        this.extractAudio(ffmpeg, fsPath)
+                        extractAudio(ffmpeg, fsPath)
                             .then((mp3Path) => {
                                 const token = this.server.register(mp3Path);
                                 if (disposed) {
@@ -170,92 +161,5 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
             .replace(/{{NONCE}}/g, nonce)
             .replace(/{{STYLE}}/g, styleUri.toString())
             .replace(/{{SCRIPT}}/g, scriptUri.toString());
-    }
-
-    /**
-     * Locate a working ffmpeg binary. Tries a list of common absolute paths and
-     * then a bare `ffmpeg` from PATH; the first that responds to `-version` wins.
-     * The result (including "not found") is cached statically.
-     */
-    private static async findFfmpeg(): Promise<string | null> {
-        if (PlayerEditorProvider.ffmpegPath !== undefined) {
-            return PlayerEditorProvider.ffmpegPath;
-        }
-
-        const candidates = [
-            '/opt/homebrew/bin/ffmpeg',
-            '/usr/local/bin/ffmpeg',
-            '/usr/bin/ffmpeg',
-            '/snap/bin/ffmpeg',
-            'ffmpeg',
-        ];
-
-        for (const bin of candidates) {
-            const works = await new Promise<boolean>((resolve) => {
-                execFile(bin, ['-version'], { timeout: 5000 }, (err) => {
-                    resolve(!err);
-                });
-            });
-            if (works) {
-                PlayerEditorProvider.ffmpegPath = bin;
-                return bin;
-            }
-        }
-
-        PlayerEditorProvider.ffmpegPath = null;
-        return null;
-    }
-
-    /**
-     * Extract the audio track of `input` into an MP3 in the OS temp dir. The
-     * output name is derived from the input path *and* its size+mtime, so editing
-     * a file in place re-extracts instead of replaying stale audio. ffmpeg writes
-     * to a temporary name that is renamed into place only on success, so a killed
-     * extraction can never leave a partial file that a later open would reuse.
-     */
-    private async extractAudio(ffmpeg: string, input: string): Promise<string> {
-        const stat = fs.statSync(input);
-        const key = crypto
-            .createHash('md5')
-            .update(`${input}\0${stat.size}\0${stat.mtimeMs}`)
-            .digest('hex')
-            .slice(0, 16);
-        const out = path.join(os.tmpdir(), `unmute-audio-${key}.mp3`);
-
-        // Reuse a previously-extracted (complete) file if present.
-        if (fs.existsSync(out)) {
-            return out;
-        }
-
-        const tmpOut = `${out}.${crypto.randomBytes(4).toString('hex')}.part`;
-        try {
-            await new Promise<void>((resolve, reject) => {
-                // execFile with an arg array (no shell) avoids command injection
-                // from the file path.
-                execFile(
-                    ffmpeg,
-                    ['-nostdin', '-i', input, '-vn', '-c:a', 'libmp3lame', '-b:a', '192k', '-y', tmpOut],
-                    { timeout: 120000 },
-                    (err) => {
-                        if (err) {
-                            reject(err);
-                        } else {
-                            resolve();
-                        }
-                    },
-                );
-            });
-            fs.renameSync(tmpOut, out);
-        } catch (err) {
-            // Best-effort cleanup of the partial file.
-            try {
-                fs.unlinkSync(tmpOut);
-            } catch {
-                /* ignore */
-            }
-            throw err;
-        }
-
-        return out;
     }
 }
