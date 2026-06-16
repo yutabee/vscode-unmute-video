@@ -202,6 +202,26 @@ test('Range bytes=0-3 -> 206 with Content-Range, Content-Length 4 and correct by
     server.unregister(tok);
 });
 
+test('multi-range bytes=0-3,8-9 -> 206 serving the first range', async (t) => {
+    const server = await freshServer(t);
+    const port = server.getPort();
+    const data = Buffer.from('0123456789'); // total 10
+    const file = makeTempFile(data, '.mp4');
+    const tok = server.register(file);
+
+    const res = await requestToken(port, tok, {
+        method: 'GET',
+        headers: { Range: 'bytes=0-3,8-9' },
+    });
+    // We honor the first range rather than falling back to a full 200.
+    assert.equal(res.statusCode, 206);
+    assert.equal(res.headers['content-range'], `bytes 0-3/${data.length}`);
+    assert.equal(res.headers['content-length'], '4');
+    assert.deepEqual(res.body, data.subarray(0, 4));
+
+    server.unregister(tok);
+});
+
 test('open-ended Range bytes=2- -> 206 to the end', async (t) => {
     const server = await freshServer(t);
     const port = server.getPort();

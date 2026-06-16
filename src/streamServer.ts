@@ -137,10 +137,10 @@ export class StreamServer {
         }
 
         // Defense-in-depth against DNS-rebinding: only answer requests addressed
-        // to the loopback host:port we actually listen on. Media elements set
-        // Host to 127.0.0.1:<port>, so legitimate traffic always passes.
-        const host = req.headers.host;
-        if (host !== undefined && host !== `127.0.0.1:${this.port}`) {
+        // to the loopback host:port we actually listen on. Media elements (HTTP/1.1)
+        // always send Host: 127.0.0.1:<port>, so a missing or mismatched Host is
+        // never legitimate here and is rejected.
+        if (req.headers.host !== `127.0.0.1:${this.port}`) {
             res.writeHead(403);
             res.end();
             return;
@@ -235,7 +235,10 @@ export class StreamServer {
         if (header === undefined || Array.isArray(header)) {
             return undefined;
         }
-        const match = /^bytes=(\d*)-(\d*)$/.exec(header.trim());
+        // Honor the first range of a (possibly multi-) range request; the first
+        // spec must be followed by a comma or the end of the header. Anything
+        // clearly malformed falls through to a full-body response.
+        const match = /^bytes=(\d*)-(\d*)(?:,|$)/.exec(header.trim());
         if (!match) {
             return undefined;
         }
