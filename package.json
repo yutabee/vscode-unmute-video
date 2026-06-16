@@ -56,7 +56,7 @@
     "compile": "tsc -p ./",
     "watch": "tsc -w -p ./",
     "pretest": "npm run compile",
-    "test": "node --test \"test/**/*.test.js\"",
+    "test": "node --test",
     "vscode:prepublish": "npm run clean && npm run compile",
     "package": "npx --yes @vscode/vsce package --no-dependencies"
   },
