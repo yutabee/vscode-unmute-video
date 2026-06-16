@@ -2,3 +2,6 @@ node_modules/
 out/
 *.vsix
 .DS_Store
+
+# Build output: media/player.js is compiled from src/webview/player.ts
+media/player.js

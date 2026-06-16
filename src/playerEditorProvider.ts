@@ -4,6 +4,7 @@ import * as path from 'path';
 import * as crypto from 'crypto';
 import { StreamServer } from './streamServer';
 import { findFfmpeg, extractAudio } from './audio';
+// HostToWebview / WebviewToHost are global ambient types (src/protocol.d.ts).
 
 /**
  * Custom editor that plays .mp4/.mov/.m4v files WITH sound inside VS Code.
@@ -59,7 +60,12 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
             .get<string>('ffmpegPath');
         const ffmpegPromise = findFfmpeg(ffmpegOverride);
 
-        const messageListener = webview.onDidReceiveMessage(async (message: any) => {
+        // Outgoing messages are checked against the shared protocol type.
+        const post = (message: HostToWebview): void => {
+            void webview.postMessage(message);
+        };
+
+        const messageListener = webview.onDidReceiveMessage(async (message: WebviewToHost) => {
             if (!message || typeof message.type !== 'string') {
                 return;
             }
@@ -74,13 +80,13 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
                     if (disposed) {
                         return;
                     }
-                    webview.postMessage({
+                    post({
                         type: 'init',
                         name: path.basename(fsPath),
                         audioPending: ffmpeg !== null,
                         ffmpegMissing: ffmpeg === null,
                     });
-                    webview.postMessage({ type: 'videoSrc', url: videoUrl });
+                    post({ type: 'videoSrc', url: videoUrl });
 
                     if (ffmpeg !== null) {
                         // Extract (or reuse) the MP3 in the background; never block
@@ -95,14 +101,11 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
                                     return;
                                 }
                                 audioToken = token;
-                                webview.postMessage({
-                                    type: 'audioSrc',
-                                    url: this.server.urlFor(token),
-                                });
+                                post({ type: 'audioSrc', url: this.server.urlFor(token) });
                             })
                             .catch((err) => {
                                 if (!disposed) {
-                                    webview.postMessage({ type: err && err.noAudio === true ? 'audioNone' : 'audioError' });
+                                    post(err && err.noAudio === true ? { type: 'audioNone' } : { type: 'audioError' });
                                 }
                             });
                     }

@@ -62,9 +62,12 @@
     ]
   },
   "scripts": {
-    "clean": "node -e \"require('fs').rmSync('out',{recursive:true,force:true})\"",
-    "compile": "tsc -p ./",
+    "clean": "node -e \"const fs=require('fs');fs.rmSync('out',{recursive:true,force:true});fs.rmSync('media/player.js',{force:true})\"",
+    "compile": "npm run compile:host && npm run compile:webview",
+    "compile:host": "tsc -p ./",
+    "compile:webview": "tsc -p ./tsconfig.webview.json",
     "watch": "tsc -w -p ./",
+    "watch:webview": "tsc -w -p ./tsconfig.webview.json",
     "pretest": "npm run compile",
     "test": "node --test",
     "vscode:prepublish": "npm run clean && npm run compile",
