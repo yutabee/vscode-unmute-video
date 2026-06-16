@@ -3,14 +3,19 @@
   "displayName": "Video Player (with Audio) — MP4/MOV",
   "description": "Play MP4 / MOV / M4V videos inside VS Code with sound. Audio is extracted via ffmpeg and synced to the muted video, working around the missing AAC codec in the VS Code webview.",
   "version": "0.1.0",
-  "publisher": "syncbloom",
+  "publisher": "yutabee",
   "license": "MIT",
+  "icon": "images/icon.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/yutabee/vscode-unmute-video.git"
   },
   "bugs": {
     "url": "https://github.com/yutabee/vscode-unmute-video/issues"
+  },
+  "galleryBanner": {
+    "color": "#241b3a",
+    "theme": "dark"
   },
   "engines": {
     "vscode": "^1.90.0"
@@ -24,11 +29,6 @@
     "mp4",
     "audio",
     "preview"
-  ],
-  "activationEvents": [
-    "onFileSystem:**/*.mp4",
-    "onFileSystem:**/*.mov",
-    "onFileSystem:**/*.m4v"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -52,9 +52,13 @@
     ]
   },
   "scripts": {
+    "clean": "node -e \"require('fs').rmSync('out',{recursive:true,force:true})\"",
     "compile": "tsc -p ./",
     "watch": "tsc -w -p ./",
-    "package": "vsce package"
+    "pretest": "npm run compile",
+    "test": "node --test \"test/**/*.test.js\"",
+    "vscode:prepublish": "npm run clean && npm run compile",
+    "package": "npx --yes @vscode/vsce package --no-dependencies"
   },
   "devDependencies": {
     "@types/node": "^18.19.130",
