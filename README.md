@@ -36,10 +36,15 @@ Controls: `space`/`k` play-pause, `j`/`l` (or ←/→) seek ±10s, `m` mute,
 
 ```bash
 npm install
-npm run compile      # or: npm run watch
-npm test             # StreamServer unit tests (node:test, no deps)
+npm run compile      # compiles host (-> out/) and webview (-> media/player.js)
+npm test             # StreamServer / audio unit tests (node:test, no deps)
 npm run package      # build a .vsix via @vscode/vsce
 ```
+
+The codebase is all TypeScript. The extension host compiles via `tsconfig.json`
+to `out/`; the webview script compiles via `tsconfig.webview.json` (DOM lib) from
+`src/webview/player.ts` to `media/player.js` (a generated, git-ignored artifact).
+`npm run watch` / `npm run watch:webview` watch each side.
 
 Press <kbd>F5</kbd> ("Run Extension") to launch an Extension Development Host.
 
@@ -50,7 +55,10 @@ Press <kbd>F5</kbd> ("Run Extension") to launch an Extension Development Host.
 | `src/extension.ts` | activation: start the stream server, register the editor + command |
 | `src/streamServer.ts` | loopback HTTP server, token-gated, HTTP Range streaming |
 | `src/playerEditorProvider.ts` | custom editor: ffmpeg audio extraction, webview wiring |
-| `media/player.html` / `player.css` / `player.js` | the in-webview player UI + audio/video sync |
+| `src/audio.ts` | ffmpeg discovery + audio extraction (no `vscode` import) |
+| `src/protocol.ts` | host ↔ webview message types, shared by both ends |
+| `src/webview/player.ts` | in-webview player UI + audio/video sync (compiles to `media/player.js`) |
+| `media/player.html` / `player.css` | webview markup + styles |
 
 ## License
 

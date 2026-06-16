@@ -4,7 +4,7 @@ src/**
 test/**
 node_modules/**
 images/icon.svg
-**/tsconfig.json
+**/tsconfig*.json
 **/*.map
 **/*.ts
 *.vsix

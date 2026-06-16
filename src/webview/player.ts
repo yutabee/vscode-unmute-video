@@ -1,42 +1,52 @@
+// HostToWebview / WebviewToHost are global ambient types from src/protocol.d.ts
+// (no import needed), so this file stays a non-module and compiles to a plain
+// classic script.
+
+declare function acquireVsCodeApi(): {
+  postMessage(message: WebviewToHost): void;
+  getState(): unknown;
+  setState(state: unknown): void;
+};
+
 (function () {
   "use strict";
 
   const vscode = acquireVsCodeApi();
 
   // ----- DOM references -----
-  const player = document.getElementById("player");
-  const stage = document.getElementById("stage");
-  const video = document.getElementById("video");
-  const fileLabel = document.getElementById("fileLabel");
-  const flash = document.getElementById("flash");
-  const flashIcon = document.getElementById("flashIcon");
+  const player = document.getElementById("player") as HTMLElement;
+  const stage = document.getElementById("stage") as HTMLElement;
+  const video = document.getElementById("video") as HTMLVideoElement;
+  const fileLabel = document.getElementById("fileLabel") as HTMLElement;
+  const flash = document.getElementById("flash") as HTMLElement;
+  const flashIcon = document.getElementById("flashIcon") as HTMLElement;
 
-  const seek = document.getElementById("seek");
-  const seekBuffered = document.getElementById("seekBuffered");
-  const seekPlayed = document.getElementById("seekPlayed");
-  const seekHandle = document.getElementById("seekHandle");
+  const seek = document.getElementById("seek") as HTMLElement;
+  const seekBuffered = document.getElementById("seekBuffered") as HTMLElement;
+  const seekPlayed = document.getElementById("seekPlayed") as HTMLElement;
+  const seekHandle = document.getElementById("seekHandle") as HTMLElement;
 
-  const playBtn = document.getElementById("playBtn");
-  const back10Btn = document.getElementById("back10Btn");
-  const fwd10Btn = document.getElementById("fwd10Btn");
-  const muteBtn = document.getElementById("muteBtn");
-  const volSlider = document.getElementById("volSlider");
-  const timeCur = document.getElementById("timeCur");
-  const timeDur = document.getElementById("timeDur");
-  const speedBtn = document.getElementById("speedBtn");
-  const pipBtn = document.getElementById("pipBtn");
-  const fsBtn = document.getElementById("fsBtn");
+  const playBtn = document.getElementById("playBtn") as HTMLButtonElement;
+  const back10Btn = document.getElementById("back10Btn") as HTMLButtonElement;
+  const fwd10Btn = document.getElementById("fwd10Btn") as HTMLButtonElement;
+  const muteBtn = document.getElementById("muteBtn") as HTMLButtonElement;
+  const volSlider = document.getElementById("volSlider") as HTMLInputElement;
+  const timeCur = document.getElementById("timeCur") as HTMLElement;
+  const timeDur = document.getElementById("timeDur") as HTMLElement;
+  const speedBtn = document.getElementById("speedBtn") as HTMLButtonElement;
+  const pipBtn = document.getElementById("pipBtn") as HTMLButtonElement;
+  const fsBtn = document.getElementById("fsBtn") as HTMLButtonElement;
 
-  const status = document.getElementById("status");
-  const statusSpinner = document.getElementById("statusSpinner");
-  const statusText = document.getElementById("statusText");
+  const status = document.getElementById("status") as HTMLElement;
+  const statusSpinner = document.getElementById("statusSpinner") as HTMLElement;
+  const statusText = document.getElementById("statusText") as HTMLElement;
 
-  const openExternalBtn = document.getElementById("openExternalBtn");
-  const copyPathBtn = document.getElementById("copyPathBtn");
+  const openExternalBtn = document.getElementById("openExternalBtn") as HTMLButtonElement;
+  const copyPathBtn = document.getElementById("copyPathBtn") as HTMLButtonElement;
 
   // ----- State -----
   /** The separate audible mp3 track, created when 'audioSrc' arrives. */
-  let audio = null;
+  let audio: HTMLAudioElement | null = null;
   let scrubbing = false;
   let wasPlayingBeforeScrub = false;
   // User's intended mute state, independent of which element is currently
@@ -49,12 +59,12 @@
 
   // The element that carries audible volume/mute for the user: the mp3 if we
   // have it, otherwise the (muted-for-AAC) video element as a fallback target.
-  function audibleEl() {
+  function audibleEl(): HTMLMediaElement {
     return audio || video;
   }
 
   // ----- Helpers -----
-  function formatTime(seconds) {
+  function formatTime(seconds: number): string {
     if (!isFinite(seconds) || seconds < 0) {
       seconds = 0;
     }
@@ -70,7 +80,7 @@
     return m + ":" + ss;
   }
 
-  function showStatus(text, variant) {
+  function showStatus(text: string, variant: "warning" | "loading" | "info"): void {
     statusText.textContent = text;
     status.hidden = false;
     if (variant === "warning") {
@@ -85,14 +95,14 @@
     }
   }
 
-  function clearStatus() {
+  function clearStatus(): void {
     status.hidden = true;
     statusText.textContent = "";
     statusSpinner.hidden = true;
     status.classList.remove("is-warning");
   }
 
-  function flashFeedback(playing) {
+  function flashFeedback(playing: boolean): void {
     // swap the center icon: play triangle vs pause bars
     if (playing) {
       flashIcon.innerHTML = '<path d="M8 5v14l11-7z" fill="currentColor"></path>';
@@ -106,13 +116,13 @@
   }
 
   // ----- Playback control -----
-  function syncAudioToVideo() {
+  function syncAudioToVideo(): void {
     if (audio && Math.abs(audio.currentTime - video.currentTime) > 0.05) {
       audio.currentTime = video.currentTime;
     }
   }
 
-  function play() {
+  function play(): void {
     video.play().catch(function () { /* ignore autoplay rejections */ });
     if (audio) {
       syncAudioToVideo();
@@ -120,31 +130,31 @@
     }
   }
 
-  function pause() {
+  function pause(): void {
     video.pause();
     if (audio) {
       audio.pause();
     }
   }
 
-  function videoIsPlaying() {
+  function videoIsPlaying(): boolean {
     return !video.paused && !video.ended;
   }
 
-  function pauseAudioForBuffering() {
+  function pauseAudioForBuffering(): void {
     if (audio && !audio.paused) {
       audio.pause();
     }
   }
 
-  function resumeAudioWithVideo() {
+  function resumeAudioWithVideo(): void {
     if (audio && videoIsPlaying()) {
       syncAudioToVideo();
       audio.play().catch(function () {});
     }
   }
 
-  function togglePlay() {
+  function togglePlay(): void {
     if (video.paused) {
       play();
       flashFeedback(true);
@@ -154,7 +164,7 @@
     }
   }
 
-  function seekTo(time) {
+  function seekTo(time: number): void {
     const dur = isFinite(video.duration) ? video.duration : time;
     const clamped = Math.max(0, Math.min(time, dur || 0));
     video.currentTime = clamped;
@@ -163,11 +173,11 @@
     }
   }
 
-  function nudge(delta) {
+  function nudge(delta: number): void {
     seekTo(video.currentTime + delta);
   }
 
-  function applyRate() {
+  function applyRate(): void {
     const rate = SPEEDS[speedIndex];
     video.playbackRate = rate;
     if (audio) {
@@ -176,7 +186,7 @@
     speedBtn.textContent = rate + "x";
   }
 
-  function cycleSpeed() {
+  function cycleSpeed(): void {
     speedIndex = (speedIndex + 1) % SPEEDS.length;
     applyRate();
   }
@@ -184,7 +194,7 @@
   // Apply the current volume + mute intent to whichever element is audible,
   // keeping the video itself permanently muted (its AAC can't decode and would
   // be a second, out-of-sync sound source).
-  function applyAudible() {
+  function applyAudible(): void {
     const v = parseFloat(volSlider.value);
     const el = audibleEl();
     el.volume = v;
@@ -195,7 +205,7 @@
     updateMuteUi();
   }
 
-  function onVolumeInput() {
+  function onVolumeInput(): void {
     // Dragging the volume up is an implicit unmute.
     if (parseFloat(volSlider.value) > 0) {
       userMuted = false;
@@ -203,18 +213,18 @@
     applyAudible();
   }
 
-  function toggleMute() {
+  function toggleMute(): void {
     userMuted = !userMuted;
     applyAudible();
   }
 
-  function updateMuteUi() {
+  function updateMuteUi(): void {
     const v = parseFloat(volSlider.value);
     player.classList.toggle("is-muted", userMuted || v === 0);
   }
 
   // ----- Progress / seek bar rendering -----
-  function renderProgress() {
+  function renderProgress(): void {
     const dur = video.duration;
     if (isFinite(dur) && dur > 0) {
       const pct = (video.currentTime / dur) * 100;
@@ -227,7 +237,7 @@
     renderBuffered();
   }
 
-  function renderBuffered() {
+  function renderBuffered(): void {
     const dur = video.duration;
     if (!isFinite(dur) || dur <= 0 || video.buffered.length === 0) {
       seekBuffered.style.width = "0%";
@@ -242,9 +252,9 @@
     seekBuffered.style.width = (end / dur) * 100 + "%";
   }
 
-  function timeFromEvent(evt) {
+  function timeFromEvent(evt: MouseEvent | TouchEvent): number {
     const rect = seek.getBoundingClientRect();
-    const clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
+    const clientX = (evt as TouchEvent).touches ? (evt as TouchEvent).touches[0].clientX : (evt as MouseEvent).clientX;
     let ratio = (clientX - rect.left) / rect.width;
     ratio = Math.max(0, Math.min(1, ratio));
     const dur = isFinite(video.duration) ? video.duration : 0;
@@ -252,7 +262,7 @@
   }
 
   // ----- Message handling -----
-  window.addEventListener("message", function (event) {
+  window.addEventListener("message", function (event: MessageEvent<HostToWebview>) {
     const msg = event.data;
     if (!msg || typeof msg.type !== "string") {
       return;
@@ -291,7 +301,7 @@
     }
   });
 
-  function attachAudio(url) {
+  function attachAudio(url: string): void {
     if (audio) {
       audio.pause();
       // Release the element without loading the empty string (which would fire a
@@ -326,7 +336,7 @@
   }
 
   // ----- Drift correction -----
-  function correctDrift() {
+  function correctDrift(): void {
     if (!audio) {
       return;
     }
@@ -416,14 +426,14 @@
   speedBtn.addEventListener("click", cycleSpeed);
 
   // ----- Seek bar interaction (click + drag-scrub) -----
-  function beginScrub(evt) {
+  function beginScrub(evt: MouseEvent | TouchEvent): void {
     scrubbing = true;
     wasPlayingBeforeScrub = !video.paused;
     seek.classList.add("scrubbing");
     moveScrub(evt);
   }
 
-  function moveScrub(evt) {
+  function moveScrub(evt: MouseEvent | TouchEvent): void {
     if (!scrubbing) {
       return;
     }
@@ -435,7 +445,7 @@
     timeCur.textContent = formatTime(t);
   }
 
-  function endScrub(evt) {
+  function endScrub(evt: MouseEvent | TouchEvent): void {
     if (!scrubbing) {
       return;
     }
@@ -471,7 +481,7 @@
     pipBtn.hidden = true;
   }
 
-  function togglePip() {
+  function togglePip(): void {
     if (!pipSupported) {
       return;
     }
@@ -484,7 +494,7 @@
   pipBtn.addEventListener("click", togglePip);
 
   // ----- Fullscreen -----
-  function toggleFullscreen() {
+  function toggleFullscreen(): void {
     if (document.fullscreenElement) {
       document.exitFullscreen().catch(function () {});
     } else if (stage.requestFullscreen) {
@@ -505,12 +515,12 @@
   });
 
   // ----- Keyboard shortcuts -----
-  function isTypingTarget(el) {
+  function isTypingTarget(el: EventTarget | null): boolean {
     if (!el) {
       return false;
     }
-    const tag = el.tagName;
-    return tag === "INPUT" || tag === "TEXTAREA" || el.isContentEditable;
+    const tag = (el as HTMLElement).tagName;
+    return tag === "INPUT" || tag === "TEXTAREA" || (el as HTMLElement).isContentEditable;
   }
 
   document.addEventListener("keydown", function (evt) {
