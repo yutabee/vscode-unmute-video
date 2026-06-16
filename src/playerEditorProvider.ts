@@ -160,7 +160,7 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
         const csp = [
             "default-src 'none'",
             `img-src ${cspSource} data:`,
-            `style-src ${cspSource} 'unsafe-inline'`,
+            `style-src ${cspSource}`,
             `font-src ${cspSource}`,
             `script-src 'nonce-${nonce}'`,
             `media-src http://127.0.0.1:${port}`,

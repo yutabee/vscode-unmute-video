@@ -9,10 +9,18 @@ import { PlayerEditorProvider } from './playerEditorProvider';
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
     // One streaming server shared by all open editors.
     const server = new StreamServer();
-    await server.start();
     context.subscriptions.push({
         dispose: () => server.dispose(),
     });
+    try {
+        await server.start();
+    } catch (err) {
+        // Don't hard-fail activation (which would leave the file in a bare text
+        // editor with no explanation). Surface the error; playback stays
+        // unavailable until the window is reloaded.
+        const detail = err instanceof Error ? err.message : String(err);
+        void vscode.window.showErrorMessage(`Unmute Video: failed to start the media server — ${detail}. Reload the window to retry.`);
+    }
 
     const provider = new PlayerEditorProvider(context, server);
 

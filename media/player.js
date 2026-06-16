@@ -294,7 +294,10 @@
   function attachAudio(url) {
     if (audio) {
       audio.pause();
-      audio.src = "";
+      // Release the element without loading the empty string (which would fire a
+      // spurious error event).
+      audio.removeAttribute("src");
+      audio.load();
       audio.remove();
     }
     audio = document.createElement("audio");
