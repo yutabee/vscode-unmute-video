@@ -52,12 +52,12 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
         // Audio extraction is async and may resolve after the editor closes;
         // this guards against leaking a token or posting to a dead webview.
         let disposed = false;
+        let handledReady = false;
 
-        webview.html = this.buildHtml(webview, mediaDir);
-
-        // Probe ffmpeg up front (cached) so we can tell the webview whether to
-        // expect an audio track at all.
-        const ffmpeg = await findFfmpeg();
+        const ffmpegOverride = vscode.workspace
+            .getConfiguration('unmuteVideo')
+            .get<string>('ffmpegPath');
+        const ffmpegPromise = findFfmpeg(ffmpegOverride);
 
         const messageListener = webview.onDidReceiveMessage(async (message: any) => {
             if (!message || typeof message.type !== 'string') {
@@ -66,6 +66,14 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
 
             switch (message.type) {
                 case 'ready': {
+                    if (handledReady) {
+                        return;
+                    }
+                    handledReady = true;
+                    const ffmpeg = await ffmpegPromise;
+                    if (disposed) {
+                        return;
+                    }
                     webview.postMessage({
                         type: 'init',
                         name: path.basename(fsPath),
@@ -92,9 +100,9 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
                                     url: this.server.urlFor(token),
                                 });
                             })
-                            .catch(() => {
+                            .catch((err) => {
                                 if (!disposed) {
-                                    webview.postMessage({ type: 'audioError' });
+                                    webview.postMessage({ type: err && err.noAudio === true ? 'audioNone' : 'audioError' });
                                 }
                             });
                     }
@@ -130,6 +138,8 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
                 this.server.unregister(audioToken);
             }
         });
+
+        webview.html = this.buildHtml(webview, mediaDir);
     }
 
     /**

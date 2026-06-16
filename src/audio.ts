@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import * as crypto from 'crypto';
-import { execFile } from 'child_process';
+import { execFile, spawn } from 'child_process';
 
 /**
  * ffmpeg-based audio extraction, kept free of any `vscode` import so it can be
@@ -16,6 +16,8 @@ const FFMPEG_CANDIDATES = [
     '/snap/bin/ffmpeg',
     'ffmpeg',
 ];
+const CACHE_DIR = path.join(os.tmpdir(), 'unmute-video-cache');
+const STDERR_TAIL_LIMIT = 16 * 1024;
 
 /**
  * Cached discovery result, shared across the host session.
@@ -24,10 +26,17 @@ const FFMPEG_CANDIDATES = [
  *   string    -> probed, this binary works
  */
 let ffmpegCache: string | null | undefined = undefined;
+let ffmpegCachePromise: Promise<string | null> | undefined;
+const overrideFfmpegCache = new Map<string, string | null>();
+const overrideFfmpegPromises = new Map<string, Promise<string | null>>();
+const inFlightExtractions = new Map<string, Promise<string>>();
 
 /** For tests: forget the cached probe result. */
 export function resetFfmpegCache(): void {
     ffmpegCache = undefined;
+    ffmpegCachePromise = undefined;
+    overrideFfmpegCache.clear();
+    overrideFfmpegPromises.clear();
 }
 
 /**
@@ -35,15 +44,47 @@ export function resetFfmpegCache(): void {
  * `ffmpeg` from PATH; the first that responds to `-version` wins. The result
  * (including "not found") is cached.
  */
-export async function findFfmpeg(): Promise<string | null> {
+export async function findFfmpeg(override?: string): Promise<string | null> {
+    const overridePath = typeof override === 'string' ? override.trim() : '';
+    if (overridePath !== '') {
+        const cached = overrideFfmpegCache.get(overridePath);
+        if (cached !== undefined) {
+            return cached;
+        }
+        const pending = overrideFfmpegPromises.get(overridePath);
+        if (pending !== undefined) {
+            return pending;
+        }
+        const promise = (async () => {
+            if (await probeFfmpeg(overridePath)) {
+                overrideFfmpegCache.set(overridePath, overridePath);
+                return overridePath;
+            }
+            const fallback = await findFfmpeg();
+            overrideFfmpegCache.set(overridePath, fallback);
+            return fallback;
+        })().finally(() => {
+            overrideFfmpegPromises.delete(overridePath);
+        });
+        overrideFfmpegPromises.set(overridePath, promise);
+        return promise;
+    }
+
     if (ffmpegCache !== undefined) {
         return ffmpegCache;
     }
+    if (ffmpegCachePromise !== undefined) {
+        return ffmpegCachePromise;
+    }
+    ffmpegCachePromise = probeDefaultFfmpeg().finally(() => {
+        ffmpegCachePromise = undefined;
+    });
+    return ffmpegCachePromise;
+}
+
+async function probeDefaultFfmpeg(): Promise<string | null> {
     for (const bin of FFMPEG_CANDIDATES) {
-        const works = await new Promise<boolean>((resolve) => {
-            execFile(bin, ['-version'], { timeout: 5000 }, (err) => resolve(!err));
-        });
-        if (works) {
+        if (await probeFfmpeg(bin)) {
             ffmpegCache = bin;
             return bin;
         }
@@ -52,10 +93,16 @@ export async function findFfmpeg(): Promise<string | null> {
     return null;
 }
 
+function probeFfmpeg(bin: string): Promise<boolean> {
+    return new Promise<boolean>((resolve) => {
+        execFile(bin, ['-version'], { timeout: 5000 }, (err) => resolve(!err));
+    });
+}
+
 /**
- * Extract the audio track of `input` into an MP3 in the OS temp dir. The output
- * name is derived from the input path *and* its size+mtime, so editing a file in
- * place re-extracts instead of replaying stale audio. ffmpeg writes to a
+ * Extract the audio track of `input` into an MP3 in the private temp cache. The
+ * output name is derived from the input path *and* its size+mtime, so editing a
+ * file in place re-extracts instead of replaying stale audio. ffmpeg writes to a
  * temporary file that is renamed into place only on success, so a killed
  * extraction can never leave a partial file that a later open would reuse.
  */
@@ -66,27 +113,46 @@ export async function extractAudio(ffmpeg: string, input: string): Promise<strin
         .update(`${input}\0${stat.size}\0${stat.mtimeMs}`)
         .digest('hex')
         .slice(0, 16);
-    const out = path.join(os.tmpdir(), `unmute-audio-${key}.mp3`);
+    const out = path.join(CACHE_DIR, `unmute-audio-${key}.mp3`);
 
     // Reuse a previously-extracted (complete) file if present.
     if (fs.existsSync(out)) {
         return out;
     }
 
+    const inFlight = inFlightExtractions.get(key);
+    if (inFlight !== undefined) {
+        return inFlight;
+    }
+
+    const promise = extractAudioToCache(ffmpeg, input, key, out).finally(() => {
+        inFlightExtractions.delete(key);
+    });
+    inFlightExtractions.set(key, promise);
+    return promise;
+}
+
+async function extractAudioToCache(ffmpeg: string, input: string, key: string, out: string): Promise<string> {
+    fs.mkdirSync(CACHE_DIR, { recursive: true, mode: 0o700 });
+
+    if (fs.existsSync(out)) {
+        return out;
+    }
+
     // The temp name keeps a .mp3 suffix AND we pass `-f mp3`, so ffmpeg's
     // extension-based muxer detection can never trip over the temp suffix.
-    const tmpOut = path.join(os.tmpdir(), `unmute-audio-${key}.${crypto.randomBytes(4).toString('hex')}.part.mp3`);
+    const tmpOut = path.join(CACHE_DIR, `unmute-audio-${key}.${crypto.randomBytes(4).toString('hex')}.part.mp3`);
     try {
-        await new Promise<void>((resolve, reject) => {
-            // execFile with an arg array (no shell) avoids command injection from
-            // the file path. `-f mp3` forces the muxer regardless of filename.
-            execFile(
-                ffmpeg,
-                ['-nostdin', '-i', input, '-vn', '-c:a', 'libmp3lame', '-b:a', '192k', '-f', 'mp3', '-y', tmpOut],
-                { timeout: 120000 },
-                (err) => (err ? reject(err) : resolve()),
-            );
-        });
+        await runFfmpeg(ffmpeg, [
+            '-nostdin',
+            '-i', input,
+            '-vn',
+            '-c:a', 'libmp3lame',
+            '-b:a', '192k',
+            '-f', 'mp3',
+            '-y', tmpOut,
+        ]);
+        fs.chmodSync(tmpOut, 0o600);
         fs.renameSync(tmpOut, out);
     } catch (err) {
         // Best-effort cleanup of the partial file.
@@ -99,4 +165,69 @@ export async function extractAudio(ffmpeg: string, input: string): Promise<strin
     }
 
     return out;
+}
+
+function runFfmpeg(ffmpeg: string, args: string[]): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+        let stderrTail = '';
+        let settled = false;
+        let timedOut = false;
+
+        // spawn with an arg array (no shell) avoids command injection from the file path.
+        const child = spawn(ffmpeg, args, { stdio: ['ignore', 'ignore', 'pipe'] });
+        const timer = setTimeout(() => {
+            timedOut = true;
+            child.kill();
+            finish(makeFfmpegError('ffmpeg timed out after 120s', stderrTail));
+        }, 120000);
+
+        const finish = (err?: Error) => {
+            if (settled) {
+                return;
+            }
+            settled = true;
+            clearTimeout(timer);
+            if (err) {
+                reject(err);
+            } else {
+                resolve();
+            }
+        };
+
+        child.stderr.on('data', (chunk: Buffer) => {
+            stderrTail += chunk.toString('utf8');
+            if (stderrTail.length > STDERR_TAIL_LIMIT) {
+                stderrTail = stderrTail.slice(-STDERR_TAIL_LIMIT);
+            }
+        });
+
+        child.on('error', (err) => {
+            finish(err);
+        });
+
+        child.on('close', (code, signal) => {
+            if (timedOut) {
+                return;
+            }
+            if (code === 0) {
+                finish();
+            } else {
+                const suffix = signal ? `signal ${signal}` : `exit code ${code}`;
+                finish(makeFfmpegError(`ffmpeg failed with ${suffix}`, stderrTail));
+            }
+        });
+    });
+}
+
+function makeFfmpegError(message: string, stderr: string): Error {
+    const detail = stderr.trim();
+    const err = new Error(detail ? `${message}: ${detail}` : message);
+    if (isNoAudioStderr(stderr)) {
+        (err as any).noAudio = true;
+    }
+    return err;
+}
+
+function isNoAudioStderr(stderr: string): boolean {
+    return /does not contain any stream|matches no streams|output file is empty/i.test(stderr);
 }

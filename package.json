@@ -32,6 +32,16 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "configuration": {
+      "title": "Unmute Video",
+      "properties": {
+        "unmuteVideo.ffmpegPath": {
+          "type": "string",
+          "default": "",
+          "description": "Absolute path to an ffmpeg binary. Leave empty to auto-detect."
+        }
+      }
+    },
     "commands": [
       {
         "command": "unmuteVideo.open",

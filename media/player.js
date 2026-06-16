@@ -127,6 +127,23 @@
     }
   }
 
+  function videoIsPlaying() {
+    return !video.paused && !video.ended;
+  }
+
+  function pauseAudioForBuffering() {
+    if (audio && !audio.paused) {
+      audio.pause();
+    }
+  }
+
+  function resumeAudioWithVideo() {
+    if (audio && videoIsPlaying()) {
+      syncAudioToVideo();
+      audio.play().catch(function () {});
+    }
+  }
+
   function togglePlay() {
     if (video.paused) {
       play();
@@ -264,6 +281,10 @@
         attachAudio(msg.url);
         break;
 
+      case "audioNone":
+        showStatus("No audio track", "info");
+        break;
+
       case "audioError":
         showStatus("Audio extraction failed", "warning");
         break;
@@ -336,10 +357,7 @@
   video.addEventListener("play", function () {
     player.classList.add("is-playing");
     player.classList.remove("is-paused");
-    if (audio && audio.paused) {
-      syncAudioToVideo();
-      audio.play().catch(function () {});
-    }
+    resumeAudioWithVideo();
   });
 
   video.addEventListener("pause", function () {
@@ -355,6 +373,12 @@
       audio.currentTime = video.currentTime;
     }
   });
+
+  video.addEventListener("seeked", resumeAudioWithVideo);
+
+  video.addEventListener("waiting", pauseAudioForBuffering);
+  video.addEventListener("stalled", pauseAudioForBuffering);
+  video.addEventListener("playing", resumeAudioWithVideo);
 
   video.addEventListener("ended", function () {
     if (audio) {
