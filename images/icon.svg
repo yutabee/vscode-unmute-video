@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="Unmute Video">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6D5EF6"/>
+      <stop offset="1" stop-color="#2A1E8C"/>
+    </linearGradient>
+    <linearGradient id="play" x1="46" y1="40" x2="86" y2="88" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#D8E4FF"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect x="0" y="0" width="128" height="128" rx="28" fill="url(#bg)"/>
+
+  <!-- Play triangle -->
+  <path d="M49 41 L49 87 L86 64 Z" fill="url(#play)" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round"/>
+
+  <!-- Sound waves -->
+  <g fill="none" stroke="#7BE7C2" stroke-linecap="round">
+    <path d="M93 50 A18 18 0 0 1 93 78" stroke-width="7"/>
+    <path d="M101 41 A30 30 0 0 1 101 87" stroke-width="7" opacity="0.65"/>
+  </g>
+</svg>

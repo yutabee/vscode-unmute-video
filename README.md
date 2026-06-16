@@ -37,6 +37,8 @@ Controls: `space`/`k` play-pause, `j`/`l` (or ←/→) seek ±10s, `m` mute,
 ```bash
 npm install
 npm run compile      # or: npm run watch
+npm test             # StreamServer unit tests (node:test, no deps)
+npm run package      # build a .vsix via @vscode/vsce
 ```
 
 Press <kbd>F5</kbd> ("Run Extension") to launch an Extension Development Host.
