@@ -1,0 +1,64 @@
+{
+  "name": "unmute-video",
+  "displayName": "Video Player (with Audio) — MP4/MOV",
+  "description": "Play MP4 / MOV / M4V videos inside VS Code with sound. Audio is extracted via ffmpeg and synced to the muted video, working around the missing AAC codec in the VS Code webview.",
+  "version": "0.1.0",
+  "publisher": "syncbloom",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yutabee/vscode-unmute-video.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yutabee/vscode-unmute-video/issues"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "video",
+    "video player",
+    "mp4",
+    "audio",
+    "preview"
+  ],
+  "activationEvents": [
+    "onFileSystem:**/*.mp4",
+    "onFileSystem:**/*.mov",
+    "onFileSystem:**/*.m4v"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "unmuteVideo.open",
+        "title": "Open with Video Player (with Audio)"
+      }
+    ],
+    "customEditors": [
+      {
+        "viewType": "unmuteVideo.viewer",
+        "displayName": "Video Player (with Audio)",
+        "priority": "default",
+        "selector": [
+          { "filenamePattern": "**/*.mp4" },
+          { "filenamePattern": "**/*.mov" },
+          { "filenamePattern": "**/*.m4v" }
+        ]
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -w -p ./",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^18.19.130",
+    "@types/vscode": "^1.90.0",
+    "typescript": "^5.4.0"
+  }
+}
