@@ -283,16 +283,25 @@ export class StreamServer {
             return;
         }
         const stream = fs.createReadStream(fsPath, { start, end });
-        stream.on('error', () => {
-            // If headers are already sent we can only destroy the socket.
+        let finished = false;
+        stream.on('error', (err) => {
+            if (finished) {
+                return;
+            }
+            finished = true;
             if (!res.headersSent) {
                 res.writeHead(500);
+                res.end();
+                return;
             }
-            res.end();
-            stream.destroy();
+            res.destroy(err);
         });
         // If the client disconnects, stop reading.
         res.on('close', () => {
+            if (finished) {
+                return;
+            }
+            finished = true;
             stream.destroy();
         });
         stream.pipe(res);
