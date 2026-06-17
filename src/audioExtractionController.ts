@@ -21,13 +21,12 @@ export class AudioExtractionController {
         private readonly post: (message: HostToWebview) => void,
     ) {}
 
-    public get isDisposed(): boolean {
-        return this.disposed;
-    }
-
-    /** Begin extraction at most once. `showPendingStatus` posts the "Extracting..." init. */
+    /**
+     * Begin extraction at most once, and never after dispose. `showPendingStatus`
+     * posts the "Extracting…" init.
+     */
     public start(showPendingStatus: boolean): void {
-        if (this.started) {
+        if (this.disposed || this.started) {
             return;
         }
         this.started = true;

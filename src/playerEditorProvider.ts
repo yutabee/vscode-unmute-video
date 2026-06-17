@@ -86,10 +86,9 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
                         audio.start(false);
                     } else {
                         post({ type: 'audioUntrusted' });
+                        // start() is a no-op after dispose, so no extra guard here.
                         trustListener = vscode.workspace.onDidGrantWorkspaceTrust(() => {
-                            if (!audio.isDisposed) {
-                                audio.start(true);
-                            }
+                            audio.start(true);
                         });
                     }
                     break;
