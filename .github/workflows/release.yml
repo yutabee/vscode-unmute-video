@@ -3,6 +3,7 @@ name: Release
 on:
   push:
     tags: ['v*.*.*']
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -30,17 +31,32 @@ jobs:
         run: npx vsce package --no-dependencies -o unmute-video.vsix
       - name: Verify webview script is packaged
         run: unzip -l unmute-video.vsix | grep -q 'extension/media/player.js'
+      # continue-on-error so one registry (or a duplicate-version re-run) never
+      # blocks the other publish or the GitHub Release. Check the run logs to
+      # confirm each registry actually published.
       - name: Publish to VS Code Marketplace
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
         if: ${{ env.VSCE_PAT != '' }}
+        continue-on-error: true
         run: npx vsce publish --packagePath unmute-video.vsix -p "$VSCE_PAT"
+      - name: Ensure Open VSX namespace
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        if: ${{ env.OVSX_PAT != '' }}
+        continue-on-error: true
+        run: npx ovsx create-namespace yutabee -p "$OVSX_PAT"
       - name: Publish to Open VSX
         env:
           OVSX_PAT: ${{ secrets.OVSX_PAT }}
         if: ${{ env.OVSX_PAT != '' }}
+        continue-on-error: true
         run: npx ovsx publish unmute-video.vsix -p "$OVSX_PAT"
-      - uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
+      # Always attach the .vsix to the GitHub Release on tag builds, even if a
+      # publish step above failed. Skipped on manual workflow_dispatch (no tag).
+      - name: GitHub Release
+        if: ${{ github.ref_type == 'tag' }}
+        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
         with:
           files: unmute-video.vsix
           generate_release_notes: true
