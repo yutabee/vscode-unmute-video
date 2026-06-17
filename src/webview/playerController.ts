@@ -571,6 +571,10 @@ export class PlayerController {
       if (this.applyLoop(true)) {
         return;
       }
+      // Playback finished with no loop: drop play intent so the next togglePlay
+      // restarts from the end instead of being read as a pause.
+      this.userIntendsPlay = false;
+      this.waitingForAudio = false;
       if (this.audio) {
         this.audio.pause();
       }
