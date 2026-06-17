@@ -5,7 +5,7 @@
 [![Open VSX Version](https://img.shields.io/open-vsx/v/yutabee/unmute-video)](https://open-vsx.org/extension/yutabee/unmute-video)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.md)
 
-Play `.mp4` / `.mov` / `.m4v` videos **with sound** directly inside VS Code.
+Play `.mp4` / `.mov` / `.m4v` / `.webm` videos **with sound** directly inside VS Code.
 
 ## Why this exists
 
@@ -37,7 +37,7 @@ but stays silent. This extension works around that:
 
 ## Usage
 
-- Open any `.mp4` / `.mov` / `.m4v` file from the Explorer — it opens in the
+- Open any `.mp4` / `.mov` / `.m4v` / `.webm` file from the Explorer — it opens in the
   player automatically.
 - Or run **"Open with Video Player (with Audio)"** from the Command Palette.
 
@@ -49,8 +49,8 @@ an external player.
 
 ## Default editor
 
-The extension registers as the default editor for `.mp4`, `.mov`, and `.m4v`
-files. To opt out for a file type or glob, map it back to the built-in editor in
+The extension registers as the default editor for `.mp4`, `.mov`, `.m4v`, and
+`.webm` files. To opt out for a file type or glob, map it back to the built-in editor in
 `workbench.editorAssociations`:
 
 ```json
@@ -58,7 +58,8 @@ files. To opt out for a file type or glob, map it back to the built-in editor in
   "workbench.editorAssociations": {
     "*.mp4": "default",
     "*.mov": "default",
-    "*.m4v": "default"
+    "*.m4v": "default",
+    "*.webm": "default"
   }
 }
 ```
@@ -71,6 +72,8 @@ files. To opt out for a file type or glob, map it back to the built-in editor in
 - Virtual and web workspaces are not supported because the player needs a real
   on-disk path.
 - Without `ffmpeg`, the video still plays, but silently.
+- `.webm` plays with native audio and does not need `ffmpeg`; `.mp4`, `.mov`,
+  and `.m4v` need `ffmpeg` for sound.
 
 ## Security
 

@@ -29,7 +29,7 @@
   "capabilities": {
     "untrustedWorkspaces": {
       "supported": "limited",
-      "description": "Audio extraction runs ffmpeg on the opened file; in untrusted workspaces the video plays muted until you trust the workspace."
+      "description": "MP4/MOV/M4V audio is extracted with ffmpeg and stays muted in untrusted workspaces until you trust them; WebM plays with native audio and needs no ffmpeg."
     },
     "virtualWorkspaces": {
       "supported": false,
@@ -46,6 +46,7 @@
     "mp4",
     "mov",
     "m4v",
+    "webm",
     "audio",
     "preview",
     "ffmpeg",
@@ -78,13 +79,16 @@
         "priority": "default",
         "selector": [
           {
-            "filenamePattern": "**/*.mp4"
+            "filenamePattern": "**/*.{mp4,MP4}"
           },
           {
-            "filenamePattern": "**/*.mov"
+            "filenamePattern": "**/*.{mov,MOV}"
           },
           {
-            "filenamePattern": "**/*.m4v"
+            "filenamePattern": "**/*.{m4v,M4V}"
+          },
+          {
+            "filenamePattern": "**/*.{webm,WEBM}"
           }
         ]
       }

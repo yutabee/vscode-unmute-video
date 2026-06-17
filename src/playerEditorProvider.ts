@@ -4,6 +4,7 @@ import * as path from 'path';
 import * as crypto from 'crypto';
 import { StreamServer } from './streamServer';
 import { AudioExtractionController } from './audioExtractionController';
+import { isNativeAudioFormat } from './mediaFormat';
 import type { HostToWebview, WebviewToHost } from './protocol';
 
 /**
@@ -37,6 +38,7 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
         webviewPanel: vscode.WebviewPanel,
     ): Promise<void> {
         const fsPath = document.uri.fsPath;
+        const nativeAudio = isNativeAudioFormat(fsPath);
         const mediaDir = vscode.Uri.joinPath(this.context.extensionUri, 'media');
         const webview = webviewPanel.webview;
 
@@ -56,14 +58,15 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
             void webview.postMessage(message);
         };
 
-        const audio = new AudioExtractionController(this.server, fsPath, post);
+        const audio = nativeAudio ? null : new AudioExtractionController(this.server, fsPath, post);
 
-        const postInit = (audioPending: boolean, ffmpegMissing: boolean): void => {
+        const postInit = (audioPending: boolean, ffmpegMissing: boolean, initNativeAudio: boolean): void => {
             post({
                 type: 'init',
                 name: path.basename(fsPath),
                 audioPending,
                 ffmpegMissing,
+                nativeAudio: initNativeAudio,
             });
         };
 
@@ -78,17 +81,23 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
                         return;
                     }
                     handledReady = true;
+                    if (nativeAudio) {
+                        postInit(false, false, true);
+                        post({ type: 'videoSrc', url: videoUrl, nativeAudio: true });
+                        return;
+                    }
+
                     const trusted = vscode.workspace.isTrusted;
-                    postInit(trusted, false);
-                    post({ type: 'videoSrc', url: videoUrl });
+                    postInit(trusted, false, false);
+                    post({ type: 'videoSrc', url: videoUrl, nativeAudio: false });
 
                     if (trusted) {
-                        audio.start(false);
+                        audio?.start(false);
                     } else {
                         post({ type: 'audioUntrusted' });
                         // start() is a no-op after dispose, so no extra guard here.
                         trustListener = vscode.workspace.onDidGrantWorkspaceTrust(() => {
-                            audio.start(true);
+                            audio?.start(true);
                         });
                     }
                     break;
@@ -116,7 +125,7 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
         });
 
         webviewPanel.onDidDispose(() => {
-            audio.dispose();
+            audio?.dispose();
             messageListener.dispose();
             if (trustListener !== undefined) {
                 trustListener.dispose();

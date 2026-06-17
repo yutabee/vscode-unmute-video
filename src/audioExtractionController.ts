@@ -87,6 +87,7 @@ export class AudioExtractionController {
             name: path.basename(this.fsPath),
             audioPending,
             ffmpegMissing,
+            nativeAudio: false,
         });
     }
 }

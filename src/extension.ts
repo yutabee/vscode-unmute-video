@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { StreamServer } from './streamServer';
 import { PlayerEditorProvider } from './playerEditorProvider';
 import { pruneAudioCache } from './audio';
+import { VIDEO_EXTENSIONS } from './mediaFormat';
 
 /**
  * Extension entry point. Starts the loopback streaming server, registers the
@@ -50,7 +51,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             if (!target) {
                 const picked = await vscode.window.showOpenDialog({
                     canSelectMany: false,
-                    filters: { Video: ['mp4', 'mov', 'm4v'] },
+                    // Derive from the single source of truth (drop the leading dot).
+                    filters: { Video: VIDEO_EXTENSIONS.map((ext) => ext.slice(1)) },
                 });
                 if (!picked || picked.length === 0) {
                     return;
