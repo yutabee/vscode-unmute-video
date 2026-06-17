@@ -1,3 +1,5 @@
+import { ALLOWED_RATES, clampPreferences } from "../preferences";
+import type { Preferences } from "../preferences";
 import type { WebviewToHost } from "../protocol";
 import { RESUME_END_THRESHOLD_SEC, shouldResume } from "../resume";
 
@@ -13,8 +15,10 @@ export class PlayerController {
   // User's intended mute state, independent of which element is currently
   // audible -- so muting before the audio track attaches is preserved.
   private userMuted = false;
-  private readonly SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2];
+  private readonly SPEEDS: readonly number[] = ALLOWED_RATES;
   private speedIndex = this.SPEEDS.indexOf(1);
+  private volumePreferenceSaveTimeout: number | undefined;
+  private hasPendingVolumePreferenceSave = false;
   private readonly DRIFT_THRESHOLD = 0.3;
   private readonly PROGRESS_SAVE_DELTA_SEC = 5;
   private resumeTime = 0;
@@ -41,6 +45,18 @@ export class PlayerController {
 
   public setNativeAudio(on: boolean): void {
     this.videoCarriesAudio = on;
+    this.applyAudible();
+  }
+
+  public applyPreferences(p: Preferences): void {
+    const preferences = clampPreferences(p);
+    els.volSlider.value = String(preferences.volume);
+    this.userMuted = preferences.muted;
+
+    const preferredIndex = this.SPEEDS.indexOf(preferences.playbackRate);
+    this.speedIndex = preferredIndex === -1 ? this.SPEEDS.indexOf(1) : preferredIndex;
+
+    this.applyRate();
     this.applyAudible();
   }
 
@@ -141,6 +157,7 @@ export class PlayerController {
   public cycleSpeed(): void {
     this.speedIndex = (this.speedIndex + 1) % this.SPEEDS.length;
     this.applyRate();
+    this.emitPreferences();
   }
 
   // Apply the current volume + mute intent to whichever element is audible,
@@ -165,11 +182,49 @@ export class PlayerController {
       this.userMuted = false;
     }
     this.applyAudible();
+    this.queueVolumePreferences();
   }
 
   public toggleMute(): void {
     this.userMuted = !this.userMuted;
     this.applyAudible();
+    this.emitPreferences();
+  }
+
+  private emitPreferences(): void {
+    this.hasPendingVolumePreferenceSave = false;
+    this.postMessage({
+      type: "savePreferences",
+      preferences: {
+        volume: parseFloat(els.volSlider.value),
+        muted: this.userMuted,
+        playbackRate: this.SPEEDS[this.speedIndex],
+      },
+    });
+  }
+
+  private queueVolumePreferences(): void {
+    if (this.volumePreferenceSaveTimeout === undefined) {
+      this.emitPreferences();
+      this.volumePreferenceSaveTimeout = window.setTimeout(() => {
+        this.flushVolumePreferences();
+      }, 400);
+      return;
+    }
+
+    this.hasPendingVolumePreferenceSave = true;
+  }
+
+  private flushVolumePreferences(): void {
+    if (this.hasPendingVolumePreferenceSave) {
+      this.emitPreferences();
+      this.volumePreferenceSaveTimeout = window.setTimeout(() => {
+        this.flushVolumePreferences();
+      }, 400);
+      return;
+    }
+
+    this.volumePreferenceSaveTimeout = undefined;
   }
 
   private updateMuteUi(): void {

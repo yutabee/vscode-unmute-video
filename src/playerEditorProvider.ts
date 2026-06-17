@@ -5,9 +5,13 @@ import * as crypto from 'crypto';
 import { StreamServer } from './streamServer';
 import { AudioExtractionController } from './audioExtractionController';
 import { isNativeAudioFormat } from './mediaFormat';
+import { clampPreferences } from './preferences';
+import type { Preferences } from './preferences';
 import { resumeKey } from './resume';
 import { sidecarCandidates, srtToVtt } from './subtitles';
 import type { HostToWebview, WebviewToHost } from './protocol';
+
+const PREFS_KEY = 'unmuteVideo.preferences';
 
 type SidecarSubtitles = {
     vtt: string;
@@ -67,7 +71,9 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
             void webview.postMessage(message);
         };
 
-        const audio = nativeAudio ? null : new AudioExtractionController(this.server, fsPath, post, saved);
+        const currentPreferences = (): Preferences => clampPreferences(this.context.globalState.get(PREFS_KEY));
+
+        const audio = nativeAudio ? null : new AudioExtractionController(this.server, fsPath, post, currentPreferences, saved);
 
         const postSidecarSubtitles = (): void => {
             const subtitles = this.readSidecarSubtitles(fsPath);
@@ -84,6 +90,7 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
                 ffmpegMissing,
                 nativeAudio: initNativeAudio,
                 resumeTime: saved,
+                preferences: currentPreferences(),
             });
         };
 
@@ -142,6 +149,11 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
                         void vscode.env.clipboard.writeText(fsPath);
                         void vscode.window.showInformationMessage('Unmute Video: file path copied to clipboard.');
                     }
+                    break;
+                }
+
+                case 'savePreferences': {
+                    void this.context.globalState.update(PREFS_KEY, clampPreferences(message.preferences));
                     break;
                 }
 
