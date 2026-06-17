@@ -1,4 +1,5 @@
 import type { WebviewToHost } from "../protocol";
+import { RESUME_END_THRESHOLD_SEC, shouldResume } from "../resume";
 
 import { els } from "./dom";
 import { clearStatus, flashFeedback, showStatus } from "./status";
@@ -14,6 +15,9 @@ export class PlayerController {
   private readonly SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2];
   private speedIndex = this.SPEEDS.indexOf(1);
   private readonly DRIFT_THRESHOLD = 0.3;
+  private readonly PROGRESS_SAVE_DELTA_SEC = 5;
+  private resumeTime = 0;
+  private lastSavedTime = 0;
   // Whether a drag-scrub is in progress. Wired by the Seekbar via
   // setScrubProvider so the timeupdate handler can skip redrawing the bar
   // mid-drag. Defaults to "not scrubbing" until the Seekbar attaches.
@@ -37,6 +41,11 @@ export class PlayerController {
   public setNativeAudio(on: boolean): void {
     this.videoCarriesAudio = on;
     this.applyAudible();
+  }
+
+  public setResumeTime(time: number): void {
+    this.resumeTime = Number.isFinite(time) && time > 0 ? time : 0;
+    this.lastSavedTime = this.resumeTime;
   }
 
   public attachVideo(url: string, nativeAudio: boolean): void {
@@ -212,6 +221,24 @@ export class PlayerController {
     }
   }
 
+  private postProgress(time: number): void {
+    if (!Number.isFinite(time)) {
+      return;
+    }
+    this.lastSavedTime = time;
+    this.postMessage({ type: "progress", time });
+  }
+
+  private postProgressIfNeeded(): void {
+    const time = els.video.currentTime;
+    if (!Number.isFinite(time)) {
+      return;
+    }
+    if (Math.abs(time - this.lastSavedTime) >= this.PROGRESS_SAVE_DELTA_SEC) {
+      this.postProgress(time);
+    }
+  }
+
   private renderProgress(): void {
     const dur = els.video.duration;
     if (isFinite(dur) && dur > 0) {
@@ -245,6 +272,9 @@ export class PlayerController {
     els.video.addEventListener("loadedmetadata", () => {
       els.timeDur.textContent = formatTime(els.video.duration);
       this.renderProgress();
+      if (shouldResume(this.resumeTime, els.video.duration, RESUME_END_THRESHOLD_SEC)) {
+        this.seekTo(this.resumeTime);
+      }
     });
 
     els.video.addEventListener("durationchange", function () {
@@ -257,6 +287,7 @@ export class PlayerController {
         this.renderProgress();
       }
       this.correctDrift();
+      this.postProgressIfNeeded();
     });
 
     els.video.addEventListener("progress", () => {
@@ -275,6 +306,7 @@ export class PlayerController {
       if (this.audio && !this.audio.paused) {
         this.audio.pause();
       }
+      this.postProgress(els.video.currentTime);
     });
 
     els.video.addEventListener("seeking", () => {

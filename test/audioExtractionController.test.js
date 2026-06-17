@@ -131,7 +131,7 @@ test('ffmpeg missing posts init with ffmpegMissing and does not extract', async 
     await sink.waitForPost((m) => m.type === 'init');
 
     assert.deepEqual(sink.posts, [
-        { type: 'init', name: 'clip.mp4', audioPending: false, ffmpegMissing: true, nativeAudio: false },
+        { type: 'init', name: 'clip.mp4', audioPending: false, ffmpegMissing: true, nativeAudio: false, resumeTime: 0 },
     ]);
     assert.deepEqual(findCalls, [undefined]);
     assert.equal(extractCalls, 0);
@@ -152,9 +152,10 @@ test('showPendingStatus posts pending init before later audioSrc', async () => {
         audioPending: true,
         ffmpegMissing: false,
         nativeAudio: false,
+        resumeTime: 0,
     });
     assert.deepEqual(sink.posts, [
-        { type: 'init', name: 'clip.mp4', audioPending: true, ffmpegMissing: false, nativeAudio: false },
+        { type: 'init', name: 'clip.mp4', audioPending: true, ffmpegMissing: false, nativeAudio: false, resumeTime: 0 },
         { type: 'audioSrc', url: 'http://127.0.0.1:0/tok-1' },
     ]);
     assert.equal(findCalls.length, 1);
