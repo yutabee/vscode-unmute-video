@@ -89,16 +89,22 @@
     "compile": "npm run compile:host && npm run compile:webview",
     "compile:host": "tsc -p ./",
     "compile:webview": "tsc -p ./tsconfig.webview.json",
+    "lint": "eslint src",
     "watch": "tsc -w -p ./",
     "watch:webview": "tsc -w -p ./tsconfig.webview.json",
     "pretest": "npm run compile",
     "test": "node --test",
     "vscode:prepublish": "npm run clean && npm run compile",
-    "package": "npx --yes @vscode/vsce package --no-dependencies"
+    "package": "vsce package --no-dependencies"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.0",
     "@types/node": "^18.19.130",
     "@types/vscode": "^1.90.0",
-    "typescript": "^5.4.0"
+    "@vscode/vsce": "3.9.2",
+    "eslint": "^10.5.0",
+    "ovsx": "1.0.1",
+    "typescript": "^5.4.0",
+    "typescript-eslint": "^8.61.1"
   }
 }

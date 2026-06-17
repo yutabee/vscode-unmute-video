@@ -8,21 +8,37 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       matrix:
         node-version: [20.x, 22.x]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
       - name: Install ffmpeg (for audio extraction tests)
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - run: npm ci
+      - run: npm run lint
+      - run: npm audit --audit-level=high
+        continue-on-error: true
       - run: npm run compile
       - run: npm test
-      - run: npx --yes @vscode/vsce package --no-dependencies -o extension.vsix
+      - run: npx vsce package --no-dependencies -o extension.vsix
+      - name: Verify webview script is packaged
+        run: unzip -l extension.vsix | grep -q 'extension/media/player.js'
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: matrix.node-version == '22.x'
+        with:
+          name: unmute-video-vsix
+          path: extension.vsix
+          if-no-files-found: error
