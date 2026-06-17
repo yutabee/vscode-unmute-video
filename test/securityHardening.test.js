@@ -17,6 +17,7 @@ const os = require('node:os');
 const path = require('node:path');
 
 const audio = require('../out/audio.js');
+const { createCleanup, makeTempDir } = require('../test-support/tmp.js');
 
 // ---------------------------------------------------------------------------
 // resolveFfmpegOverride
@@ -78,7 +79,8 @@ test('resolveFfmpegOverride: a symlinked alias of a workspace path is caught (re
         t.skip('directory symlinks need privileges on Windows');
         return;
     }
-    const base = fs.mkdtempSync(path.join(os.tmpdir(), 'unmute-symlink-'));
+    const cleanup = createCleanup();
+    const base = cleanup.track(makeTempDir('unmute-symlink'));
     try {
         const realRoot = path.join(base, 'real-root');
         fs.mkdirSync(path.join(realRoot, 'bin'), { recursive: true });
@@ -90,7 +92,7 @@ test('resolveFfmpegOverride: a symlinked alias of a workspace path is caught (re
         const viaLink = path.join(linkRoot, 'bin', 'ffmpeg');
         assert.equal(audio.resolveFfmpegOverride(viaLink, [realRoot]), undefined);
     } finally {
-        fs.rmSync(base, { recursive: true, force: true });
+        cleanup.run();
     }
 });
 
