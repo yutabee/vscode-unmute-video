@@ -77,8 +77,7 @@ taken seriously.
 
 ## Releasing (maintainers)
 
-Releases are automated: pushing an annotated `vX.Y.Z` tag triggers
-`.github/workflows/release.yml`, which packages the extension and publishes to the
-VS Code Marketplace and Open VSX, then attaches the `.vsix` to a GitHub Release.
-This requires the `VSCE_PAT` and `OVSX_PAT` repository secrets and a claimed Open
-VSX namespace.
+Releases are automated by `.github/workflows/release.yml`: pushing an annotated
+`vX.Y.Z` tag builds, publishes to the VS Code Marketplace and Open VSX, and
+attaches the `.vsix` to a GitHub Release. See [docs/PUBLISHING.md](docs/PUBLISHING.md)
+for the one-time secret setup and the step-by-step release process.

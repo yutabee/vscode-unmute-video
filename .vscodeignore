@@ -2,6 +2,7 @@
 .github/**
 src/**
 test/**
+docs/**
 node_modules/**
 images/icon.svg
 **/tsconfig*.json
