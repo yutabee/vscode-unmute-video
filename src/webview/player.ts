@@ -1,6 +1,7 @@
-// HostToWebview / WebviewToHost are global ambient types from src/protocol.d.ts
-// (no import needed), so this file stays a non-module and compiles to a plain
-// classic script.
+// Bundled by esbuild into a single classic <script> (IIFE), so importing the
+// shared protocol types as a normal module is fine — esbuild drops the
+// type-only import from the output.
+import type { HostToWebview, WebviewToHost } from '../protocol';
 
 declare function acquireVsCodeApi(): {
   postMessage(message: WebviewToHost): void;

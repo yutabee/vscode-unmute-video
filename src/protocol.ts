@@ -1,17 +1,16 @@
 /**
  * Message protocol shared by the extension host (playerEditorProvider) and the
- * webview controller (webview/player) — the single source of truth for the
+ * webview controller (webview/*) — the single source of truth for the
  * postMessage boundary.
  *
- * This file has no top-level `import`/`export`, so its declarations are GLOBAL
- * ambient types. Both ends reference them without importing, which keeps the
- * compiled webview script a plain classic `<script>` (an `import` would turn it
- * into a module and force a `type="module"` load). Being a `.d.ts`, it emits no
- * JavaScript on either side.
+ * The webview bundle is produced by esbuild, so both ends can `import type`
+ * these definitions as a normal module. Being type-only, this module emits no
+ * runtime JavaScript (esbuild drops it from the bundle; tsc emits an empty
+ * `out/protocol.js` on the host side).
  */
 
 /** Messages the extension host sends to the webview. */
-type HostToWebview =
+export type HostToWebview =
     | { type: 'init'; name: string; audioPending: boolean; ffmpegMissing: boolean }
     | { type: 'videoSrc'; url: string }
     | { type: 'audioSrc'; url: string }
@@ -20,10 +19,10 @@ type HostToWebview =
     | { type: 'audioUntrusted' };
 
 /** Actions the webview can ask the host to perform. */
-type WebviewAction = 'openExternal' | 'copyPath';
+export type WebviewAction = 'openExternal' | 'copyPath';
 
 /** Messages the webview sends to the extension host. */
-type WebviewToHost =
+export type WebviewToHost =
     | { type: 'ready' }
     | { type: 'error'; message: string }
     | { type: 'action'; name: WebviewAction };

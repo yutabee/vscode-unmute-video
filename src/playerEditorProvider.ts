@@ -4,7 +4,7 @@ import * as path from 'path';
 import * as crypto from 'crypto';
 import { StreamServer } from './streamServer';
 import { findFfmpeg, extractAudio, resolveFfmpegOverride } from './audio';
-// HostToWebview / WebviewToHost are global ambient types (src/protocol.d.ts).
+import type { HostToWebview, WebviewToHost } from './protocol';
 
 /**
  * Custom editor that plays .mp4/.mov/.m4v files WITH sound inside VS Code.
