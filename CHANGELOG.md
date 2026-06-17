@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-06-17
+
+### Fixed
+
+- Corrected the copyright holder in the bundled `LICENSE`.
+
+### Changed
+
+- Security and Code of Conduct reports now go through GitHub's private reporting
+  instead of an email address.
+
 ## [0.1.0] - 2026-06-17
 
 ### Added
@@ -27,5 +38,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The `unmuteVideo.ffmpegPath` setting is machine-scoped, so a workspace cannot
   redirect the extension to an arbitrary executable.
 
-[Unreleased]: https://github.com/yutabee/vscode-unmute-video/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/yutabee/vscode-unmute-video/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/yutabee/vscode-unmute-video/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/yutabee/vscode-unmute-video/releases/tag/v0.1.0
