@@ -14,19 +14,14 @@ declare function acquireVsCodeApi(): {
 };
 
 const vscode = acquireVsCodeApi();
-let isScrubbing = function (): boolean {
-  return false;
-};
 
 const controller = new PlayerController(function (message) {
   vscode.postMessage(message);
-}, function () {
-  return isScrubbing();
 });
 const seekbar = new Seekbar(controller);
-isScrubbing = function (): boolean {
+controller.setScrubProvider(function () {
   return seekbar.isScrubbing();
-};
+});
 
 // ----- Message handling -----
 window.addEventListener("message", function (event: MessageEvent<HostToWebview>) {

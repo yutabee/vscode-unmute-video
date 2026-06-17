@@ -1,12 +1,23 @@
 import { els } from "./dom";
-import { PlayerController } from "./playerController";
 import { formatTime, ratioInRect } from "./util";
+
+/**
+ * The slice of the player the seek bar drives. Depending on this narrow
+ * contract (instead of the concrete PlayerController) keeps the two modules
+ * decoupled — neither imports the other.
+ */
+export interface PlaybackForSeek {
+  readonly duration: number;
+  isPaused(): boolean;
+  play(): void;
+  seekTo(time: number): void;
+}
 
 export class Seekbar {
   private scrubbing = false;
   private wasPlayingBeforeScrub = false;
 
-  public constructor(private readonly controller: PlayerController) {
+  public constructor(private readonly controller: PlaybackForSeek) {
     els.seek.addEventListener("mousedown", (evt) => {
       evt.preventDefault();
       this.beginScrub(evt);

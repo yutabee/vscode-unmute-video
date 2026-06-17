@@ -13,16 +13,20 @@ export class PlayerController {
   private readonly SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2];
   private speedIndex = this.SPEEDS.indexOf(1);
   private readonly DRIFT_THRESHOLD = 0.3;
+  // Whether a drag-scrub is in progress. Wired by the Seekbar via
+  // setScrubProvider so the timeupdate handler can skip redrawing the bar
+  // mid-drag. Defaults to "not scrubbing" until the Seekbar attaches.
+  private isScrubbing: () => boolean = () => false;
 
   public constructor(
     private readonly postMessage: (message: WebviewToHost) => void,
-    private readonly isScrubbing: () => boolean,
   ) {
     this.attachVideoListeners();
   }
 
-  public get currentTime(): number {
-    return els.video.currentTime;
+  /** Let the Seekbar report when a drag-scrub is active. */
+  public setScrubProvider(isScrubbing: () => boolean): void {
+    this.isScrubbing = isScrubbing;
   }
 
   public get duration(): number {
@@ -35,11 +39,11 @@ export class PlayerController {
 
   // The element that carries audible volume/mute for the user: the mp3 if we
   // have it, otherwise the (muted-for-AAC) video element as a fallback target.
-  public audibleEl(): HTMLMediaElement {
+  private audibleEl(): HTMLMediaElement {
     return this.audio || els.video;
   }
 
-  public syncAudioToVideo(): void {
+  private syncAudioToVideo(): void {
     if (this.audio && Math.abs(this.audio.currentTime - els.video.currentTime) > 0.05) {
       this.audio.currentTime = els.video.currentTime;
     }
@@ -53,24 +57,24 @@ export class PlayerController {
     }
   }
 
-  public pause(): void {
+  private pause(): void {
     els.video.pause();
     if (this.audio) {
       this.audio.pause();
     }
   }
 
-  public videoIsPlaying(): boolean {
+  private videoIsPlaying(): boolean {
     return !els.video.paused && !els.video.ended;
   }
 
-  public pauseAudioForBuffering(): void {
+  private pauseAudioForBuffering(): void {
     if (this.audio && !this.audio.paused) {
       this.audio.pause();
     }
   }
 
-  public resumeAudioWithVideo(): void {
+  private resumeAudioWithVideo(): void {
     if (this.audio && this.videoIsPlaying()) {
       this.syncAudioToVideo();
       this.audio.play().catch(function () {});
@@ -117,7 +121,7 @@ export class PlayerController {
   // Apply the current volume + mute intent to whichever element is audible,
   // keeping the video itself permanently muted (its AAC can't decode and would
   // be a second, out-of-sync sound source).
-  public applyAudible(): void {
+  private applyAudible(): void {
     const v = parseFloat(els.volSlider.value);
     const el = this.audibleEl();
     el.volume = v;
@@ -141,7 +145,7 @@ export class PlayerController {
     this.applyAudible();
   }
 
-  public updateMuteUi(): void {
+  private updateMuteUi(): void {
     const v = parseFloat(els.volSlider.value);
     els.player.classList.toggle("is-muted", this.userMuted || v === 0);
   }
@@ -180,7 +184,7 @@ export class PlayerController {
     clearStatus();
   }
 
-  public correctDrift(): void {
+  private correctDrift(): void {
     if (!this.audio) {
       return;
     }
@@ -191,7 +195,7 @@ export class PlayerController {
     }
   }
 
-  public renderProgress(): void {
+  private renderProgress(): void {
     const dur = els.video.duration;
     if (isFinite(dur) && dur > 0) {
       const pct = (els.video.currentTime / dur) * 100;
@@ -204,7 +208,7 @@ export class PlayerController {
     this.renderBuffered();
   }
 
-  public renderBuffered(): void {
+  private renderBuffered(): void {
     const dur = els.video.duration;
     if (!isFinite(dur) || dur <= 0 || els.video.buffered.length === 0) {
       els.seekBuffered.style.width = "0%";
