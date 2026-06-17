@@ -49,6 +49,10 @@ window.addEventListener("message", function (event: MessageEvent<HostToWebview>)
       controller.attachVideo(msg.url, !!msg.nativeAudio);
       break;
 
+    case "subtitles":
+      controller.attachSubtitles(msg.vtt, msg.label);
+      break;
+
     case "audioSrc":
       controller.attachAudio(msg.url);
       break;
@@ -91,6 +95,9 @@ els.volSlider.addEventListener("input", function () {
 
 els.speedBtn.addEventListener("click", function () {
   controller.cycleSpeed();
+});
+els.subBtn.addEventListener("click", function () {
+  controller.toggleSubtitles();
 });
 
 // ----- Picture in Picture -----
@@ -156,6 +163,10 @@ document.addEventListener("keydown", function (evt) {
     case "m":
     case "M":
       controller.toggleMute();
+      break;
+    case "c":
+    case "C":
+      controller.toggleSubtitles();
       break;
     case "j":
     case "J":

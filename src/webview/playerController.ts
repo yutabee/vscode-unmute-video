@@ -7,6 +7,7 @@ import { clamp, formatTime, latestBufferedEnd } from "./util";
 export class PlayerController {
   /** The separate audible mp3 track, created when 'audioSrc' arrives. */
   private audio: HTMLAudioElement | null = null;
+  private subtitlesUrl: string | null = null;
   private videoCarriesAudio = false;
   // User's intended mute state, independent of which element is currently
   // audible -- so muting before the audio track attaches is preserved.
@@ -199,6 +200,33 @@ export class PlayerController {
     });
 
     clearStatus();
+  }
+
+  public attachSubtitles(vtt: string, label: string): void {
+    if (this.subtitlesUrl !== null) {
+      URL.revokeObjectURL(this.subtitlesUrl);
+    }
+
+    const blob = new Blob([vtt], { type: "text/vtt" });
+    this.subtitlesUrl = URL.createObjectURL(blob);
+    els.track.src = this.subtitlesUrl;
+    els.track.label = label;
+    els.track.track.mode = "hidden";
+    els.subBtn.hidden = false;
+    els.subBtn.setAttribute("aria-pressed", "false");
+    els.player.classList.remove("is-subtitles-on");
+  }
+
+  public toggleSubtitles(): void {
+    if (els.video.textTracks.length === 0 || els.subBtn.hidden) {
+      return;
+    }
+
+    const track = els.video.textTracks[0];
+    const showing = track.mode !== "showing";
+    track.mode = showing ? "showing" : "hidden";
+    els.player.classList.toggle("is-subtitles-on", showing);
+    els.subBtn.setAttribute("aria-pressed", showing ? "true" : "false");
   }
 
   private correctDrift(): void {

@@ -5,7 +5,13 @@ import * as crypto from 'crypto';
 import { StreamServer } from './streamServer';
 import { AudioExtractionController } from './audioExtractionController';
 import { isNativeAudioFormat } from './mediaFormat';
+import { sidecarCandidates, srtToVtt } from './subtitles';
 import type { HostToWebview, WebviewToHost } from './protocol';
+
+type SidecarSubtitles = {
+    vtt: string;
+    label: string;
+};
 
 /**
  * Custom editor that plays .mp4/.mov/.m4v files WITH sound inside VS Code.
@@ -60,6 +66,13 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
 
         const audio = nativeAudio ? null : new AudioExtractionController(this.server, fsPath, post);
 
+        const postSidecarSubtitles = (): void => {
+            const subtitles = this.readSidecarSubtitles(fsPath);
+            if (subtitles !== undefined) {
+                post({ type: 'subtitles', vtt: subtitles.vtt, label: subtitles.label });
+            }
+        };
+
         const postInit = (audioPending: boolean, ffmpegMissing: boolean, initNativeAudio: boolean): void => {
             post({
                 type: 'init',
@@ -84,12 +97,14 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
                     if (nativeAudio) {
                         postInit(false, false, true);
                         post({ type: 'videoSrc', url: videoUrl, nativeAudio: true });
+                        postSidecarSubtitles();
                         return;
                     }
 
                     const trusted = vscode.workspace.isTrusted;
                     postInit(trusted, false, false);
                     post({ type: 'videoSrc', url: videoUrl, nativeAudio: false });
+                    postSidecarSubtitles();
 
                     if (trusted) {
                         audio?.start(false);
@@ -136,6 +151,28 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
         webview.html = this.buildHtml(webview, mediaDir);
     }
 
+    private readSidecarSubtitles(videoFsPath: string): SidecarSubtitles | undefined {
+        for (const candidate of sidecarCandidates(videoFsPath)) {
+            try {
+                if (!fs.existsSync(candidate) || !fs.statSync(candidate).isFile()) {
+                    continue;
+                }
+
+                const text = fs.readFileSync(candidate, 'utf8');
+                const vtt = path.extname(candidate).toLowerCase() === '.srt'
+                    ? srtToVtt(text)
+                    : text;
+                return {
+                    vtt,
+                    label: path.basename(candidate),
+                };
+            } catch {
+                return undefined;
+            }
+        }
+        return undefined;
+    }
+
     /**
      * Read media/player.html and substitute the CSP / nonce / style / script
      * tokens. The CSP must exactly match what the contract specifies so the
@@ -157,7 +194,7 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
             `style-src ${cspSource}`,
             `font-src ${cspSource}`,
             `script-src 'nonce-${nonce}'`,
-            `media-src http://127.0.0.1:${port}`,
+            `media-src http://127.0.0.1:${port} blob:`,
         ].join('; ');
 
         return template
