@@ -4,12 +4,9 @@
 
 **Please do not report security vulnerabilities through public GitHub issues.**
 
-Instead, use one of these private channels:
-
-- **GitHub** — open a private report via the repository's
-  **Security → Report a vulnerability** tab
-  ([Privately reporting a security vulnerability](https://docs.github.com/en/code-security/security-advisories/guidance-on-reporting-and-writing-information-about-vulnerabilities/privately-reporting-a-security-vulnerability)).
-- **Email** — `info@syncbloom.jp`.
+Instead, open a private report via the repository's
+**Security → Report a vulnerability** tab
+([Privately reporting a security vulnerability](https://docs.github.com/en/code-security/security-advisories/guidance-on-reporting-and-writing-information-about-vulnerabilities/privately-reporting-a-security-vulnerability)).
 
 Please include enough detail to reproduce: VS Code version, OS, the file/codec
 involved, and a description of the impact. We aim to acknowledge a report within
