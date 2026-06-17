@@ -3,8 +3,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
 import { StreamServer } from './streamServer';
-import { findFfmpeg, extractAudio, resolveFfmpegOverride } from './audio';
-// HostToWebview / WebviewToHost are global ambient types (src/protocol.d.ts).
+import { AudioExtractionController } from './audioExtractionController';
+import type { HostToWebview, WebviewToHost } from './protocol';
 
 /**
  * Custom editor that plays .mp4/.mov/.m4v files WITH sound inside VS Code.
@@ -48,19 +48,15 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
         // Register the video with the streaming server.
         const videoToken = this.server.register(fsPath);
         const videoUrl = this.server.urlFor(videoToken);
-        // The audio token is created later, only if ffmpeg succeeds.
-        let audioToken: string | undefined;
-        // Audio extraction is async and may resolve after the editor closes;
-        // this guards against leaking a token or posting to a dead webview.
-        let disposed = false;
         let handledReady = false;
         let trustListener: vscode.Disposable | undefined;
-        let audioExtractionStarted = false;
 
         // Outgoing messages are checked against the shared protocol type.
         const post = (message: HostToWebview): void => {
             void webview.postMessage(message);
         };
+
+        const audio = new AudioExtractionController(this.server, fsPath, post);
 
         const postInit = (audioPending: boolean, ffmpegMissing: boolean): void => {
             post({
@@ -68,56 +64,6 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
                 name: path.basename(fsPath),
                 audioPending,
                 ffmpegMissing,
-            });
-        };
-
-        const hasNoAudioFlag = (err: unknown): boolean =>
-            typeof err === 'object' && err !== null && (err as { noAudio?: unknown }).noAudio === true;
-
-        const startAudioExtraction = (showPendingStatus: boolean): void => {
-            if (audioExtractionStarted) {
-                return;
-            }
-            audioExtractionStarted = true;
-
-            if (showPendingStatus) {
-                postInit(true, false);
-            }
-
-            void (async () => {
-                const config = vscode.workspace.getConfiguration('unmuteVideo');
-                const workspaceRoots = (vscode.workspace.workspaceFolders ?? []).map((folder) => folder.uri.fsPath);
-                const ffmpegOverride = resolveFfmpegOverride(config.get<string>('ffmpegPath'), workspaceRoots);
-                const ffmpeg = await findFfmpeg(ffmpegOverride);
-                if (disposed) {
-                    return;
-                }
-
-                if (ffmpeg === null) {
-                    postInit(false, true);
-                    return;
-                }
-
-                try {
-                    const mp3Path = await extractAudio(ffmpeg, fsPath);
-                    const token = this.server.register(mp3Path);
-                    if (disposed) {
-                        // Editor closed before extraction finished:
-                        // release the token instead of leaking it.
-                        this.server.unregister(token);
-                        return;
-                    }
-                    audioToken = token;
-                    post({ type: 'audioSrc', url: this.server.urlFor(token) });
-                } catch (err) {
-                    if (!disposed) {
-                        post(hasNoAudioFlag(err) ? { type: 'audioNone' } : { type: 'audioError' });
-                    }
-                }
-            })().catch(() => {
-                if (!disposed) {
-                    post({ type: 'audioError' });
-                }
             });
         };
 
@@ -137,13 +83,12 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
                     post({ type: 'videoSrc', url: videoUrl });
 
                     if (trusted) {
-                        startAudioExtraction(false);
+                        audio.start(false);
                     } else {
                         post({ type: 'audioUntrusted' });
+                        // start() is a no-op after dispose, so no extra guard here.
                         trustListener = vscode.workspace.onDidGrantWorkspaceTrust(() => {
-                            if (!disposed) {
-                                startAudioExtraction(true);
-                            }
+                            audio.start(true);
                         });
                     }
                     break;
@@ -171,15 +116,12 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
         });
 
         webviewPanel.onDidDispose(() => {
-            disposed = true;
+            audio.dispose();
             messageListener.dispose();
             if (trustListener !== undefined) {
                 trustListener.dispose();
             }
             this.server.unregister(videoToken);
-            if (audioToken !== undefined) {
-                this.server.unregister(audioToken);
-            }
         });
 
         webview.html = this.buildHtml(webview, mediaDir);

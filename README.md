@@ -89,9 +89,10 @@ npm run package      # build a .vsix via @vscode/vsce
 ```
 
 The codebase is all TypeScript. The extension host compiles via `tsconfig.json`
-to `out/`; the webview script compiles via `tsconfig.webview.json` (DOM lib) from
-`src/webview/player.ts` to `media/player.js` (a generated, git-ignored artifact).
-`npm run watch` / `npm run watch:webview` watch each side.
+to `out/`; the webview is bundled by esbuild from `src/webview/main.ts` into a
+single `media/player.js` IIFE (a generated, git-ignored artifact) and type-checked
+via `tsconfig.webview.json` (DOM lib). `npm run watch` / `npm run watch:webview`
+watch each side.
 
 Press <kbd>F5</kbd> ("Run Extension") to launch an Extension Development Host.
 
@@ -101,10 +102,11 @@ Press <kbd>F5</kbd> ("Run Extension") to launch an Extension Development Host.
 | --- | --- |
 | `src/extension.ts` | activation: start the stream server, register the editor + command |
 | `src/streamServer.ts` | loopback HTTP server, token-gated, HTTP Range streaming |
-| `src/playerEditorProvider.ts` | custom editor: ffmpeg audio extraction, webview wiring |
+| `src/playerEditorProvider.ts` | custom editor: webview wiring, video token, trust handling |
+| `src/audioExtractionController.ts` | per-editor audio-extraction lifecycle (ffmpeg → mp3 → stream token) |
 | `src/audio.ts` | ffmpeg discovery + audio extraction (no `vscode` import) |
-| `src/protocol.d.ts` | host ↔ webview message types, shared by both ends |
-| `src/webview/player.ts` | in-webview player UI + audio/video sync (compiles to `media/player.js`) |
+| `src/protocol.ts` | host ↔ webview message types (type-only module), shared by both ends |
+| `src/webview/` | in-webview player, bundled to `media/player.js`: `main.ts` (entry + wiring), `playerController.ts` (video/audio sync + drift), `seekbar.ts`, `dom.ts`, `status.ts`, `util.ts` (pure, unit-tested helpers) |
 | `media/player.html` / `player.css` | webview markup + styles |
 
 ## License
