@@ -82,6 +82,16 @@ els.fwd10Btn.addEventListener("click", function () {
   controller.nudge(10);
 });
 
+els.loopBtn.addEventListener("click", function () {
+  controller.toggleWholeLoop();
+});
+els.setABtn.addEventListener("click", function () {
+  controller.setLoopA();
+});
+els.setBBtn.addEventListener("click", function () {
+  controller.setLoopB();
+});
+
 els.muteBtn.addEventListener("click", function () {
   controller.toggleMute();
 });
@@ -166,6 +176,15 @@ document.addEventListener("keydown", function (evt) {
     case "L":
     case "ArrowRight":
       controller.nudge(10);
+      break;
+    case "[":
+      controller.setLoopA();
+      break;
+    case "]":
+      controller.setLoopB();
+      break;
+    case "\\":
+      controller.toggleWholeLoop();
       break;
     case "p":
     case "P":

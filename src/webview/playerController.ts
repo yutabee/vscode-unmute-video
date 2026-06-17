@@ -1,6 +1,8 @@
 import type { WebviewToHost } from "../protocol";
 
+import { nextLoopTarget, type LoopState } from "./abLoop";
 import { els } from "./dom";
+import { renderLoopMarkers } from "./seekbar";
 import { clearStatus, flashFeedback, showStatus } from "./status";
 import { clamp, formatTime, latestBufferedEnd } from "./util";
 
@@ -14,6 +16,7 @@ export class PlayerController {
   private readonly SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2];
   private speedIndex = this.SPEEDS.indexOf(1);
   private readonly DRIFT_THRESHOLD = 0.3;
+  private loop: LoopState = { a: null, b: null, whole: false, duration: 0 };
   // Whether a drag-scrub is in progress. Wired by the Seekbar via
   // setScrubProvider so the timeupdate handler can skip redrawing the bar
   // mid-drag. Defaults to "not scrubbing" until the Seekbar attaches.
@@ -117,6 +120,37 @@ export class PlayerController {
 
   public nudge(delta: number): void {
     this.seekTo(els.video.currentTime + delta);
+  }
+
+  public setLoopA(): void {
+    const a = els.video.currentTime;
+    this.loop.a = a;
+    if (this.loop.b !== null && this.loop.b <= a) {
+      this.loop.b = null;
+    }
+    this.refreshLoopUi();
+  }
+
+  public setLoopB(): void {
+    if (this.loop.a === null) {
+      return;
+    }
+    const b = els.video.currentTime;
+    if (b <= this.loop.a) {
+      return;
+    }
+    this.loop.b = b;
+    this.refreshLoopUi();
+  }
+
+  public toggleWholeLoop(): void {
+    this.loop.whole = !this.loop.whole;
+    this.refreshLoopUi();
+  }
+
+  public clearLoop(): void {
+    this.loop = { a: null, b: null, whole: false, duration: els.video.duration };
+    this.refreshLoopUi();
   }
 
   public applyRate(): void {
@@ -241,20 +275,47 @@ export class PlayerController {
     els.seekBuffered.style.width = (end / dur) * 100 + "%";
   }
 
+  private refreshLoopUi(): void {
+    this.loop.duration = els.video.duration;
+    renderLoopMarkers(this.loop.a, this.loop.b, this.loop.duration);
+    els.player.classList.toggle("is-looping", this.loop.whole);
+    els.loopBtn.classList.toggle("is-active", this.loop.whole);
+    els.setABtn.classList.toggle("is-active", this.loop.a !== null);
+    els.setBBtn.classList.toggle("is-active", this.loop.b !== null);
+  }
+
+  private applyLoop(resumeAfterSeek: boolean): boolean {
+    const target = nextLoopTarget(els.video.currentTime, { ...this.loop, duration: els.video.duration });
+    if (target === null) {
+      return false;
+    }
+    this.seekTo(target);
+    this.renderProgress();
+    if (resumeAfterSeek) {
+      this.play();
+    }
+    return true;
+  }
+
   private attachVideoListeners(): void {
     els.video.addEventListener("loadedmetadata", () => {
       els.timeDur.textContent = formatTime(els.video.duration);
+      this.refreshLoopUi();
       this.renderProgress();
     });
 
-    els.video.addEventListener("durationchange", function () {
+    els.video.addEventListener("durationchange", () => {
       els.timeDur.textContent = formatTime(els.video.duration);
+      this.refreshLoopUi();
     });
 
     els.video.addEventListener("timeupdate", () => {
       if (!this.isScrubbing()) {
         els.timeCur.textContent = formatTime(els.video.currentTime);
         this.renderProgress();
+      }
+      if (this.applyLoop(this.videoIsPlaying())) {
+        return;
       }
       this.correctDrift();
     });
@@ -298,6 +359,9 @@ export class PlayerController {
     });
 
     els.video.addEventListener("ended", () => {
+      if (this.applyLoop(true)) {
+        return;
+      }
       if (this.audio) {
         this.audio.pause();
       }

@@ -4,6 +4,6 @@
     "rootDir": "src",
     "outDir": "out"
   },
-  "include": ["src/webview/util.ts"],
+  "include": ["src/webview/util.ts", "src/webview/abLoop.ts"],
   "exclude": ["node_modules", "out"]
 }

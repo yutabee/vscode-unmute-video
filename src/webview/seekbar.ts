@@ -13,6 +13,21 @@ export interface PlaybackForSeek {
   seekTo(time: number): void;
 }
 
+export function renderLoopMarkers(a: number | null, b: number | null, duration: number): void {
+  renderLoopMarker(els.markerA, a, duration);
+  renderLoopMarker(els.markerB, b, duration);
+}
+
+function renderLoopMarker(marker: HTMLElement, time: number | null, duration: number): void {
+  if (time === null || !Number.isFinite(duration) || duration <= 0) {
+    marker.hidden = true;
+    marker.style.left = "0%";
+    return;
+  }
+  marker.hidden = false;
+  marker.style.left = (time / duration) * 100 + "%";
+}
+
 export class Seekbar {
   private scrubbing = false;
   private wasPlayingBeforeScrub = false;
