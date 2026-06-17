@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-06-17
+
 ### Changed
 
 - Internal refactor (no behaviour change): the webview is now bundled by esbuild
@@ -15,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   message protocol moved from a global ambient `.d.ts` to a type-only module, the
   two ffmpeg-probe caches were unified into one memoizer, and the audio-extraction
   lifecycle moved into `AudioExtractionController`.
+- Expanded the test suite (pure webview helpers, ffmpeg-cache probe behaviour, and
+  the audio-extraction lifecycle) to lock the refactor in place.
 
 ## [0.1.1] - 2026-06-17
 
