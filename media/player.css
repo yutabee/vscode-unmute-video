@@ -6,6 +6,8 @@
   --txt-dim: #9aa0a8;
   --accent: #4ea1ff;
   --accent-dim: #2f6db3;
+  --loop-a: #60d394;
+  --loop-b: #f7b955;
   --warn-bg: #3a2a1a;
   --warn-bd: #7a5320;
   --warn-txt: #f0c476;
@@ -171,6 +173,25 @@ html, body {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
 }
 
+.seek-marker {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  border-radius: 2px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.seek-marker-a {
+  background: var(--loop-a);
+}
+
+.seek-marker-b {
+  background: var(--loop-b);
+}
+
 .seek:hover .seek-handle,
 .seek.scrubbing .seek-handle {
   transform: translate(-50%, -50%) scale(1);
@@ -236,6 +257,17 @@ html, body {
   font-weight: 600;
   font-size: 12px;
   min-width: 42px;
+}
+
+.btn-loop-point {
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.btn.is-active,
+.player.is-looping #loopBtn {
+  color: #fff;
+  background: var(--accent-dim);
 }
 
 .btn-cc {

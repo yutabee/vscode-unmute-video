@@ -32,6 +32,8 @@
       <div class="seek-track">
         <div class="seek-buffered" id="seekBuffered"></div>
         <div class="seek-played" id="seekPlayed"></div>
+        <span class="seek-marker seek-marker-a" id="markerA" hidden></span>
+        <span class="seek-marker seek-marker-b" id="markerB" hidden></span>
         <div class="seek-handle" id="seekHandle"></div>
       </div>
     </div>
@@ -56,6 +58,15 @@
         </svg>
         <span class="btn-sub">10</span>
       </button>
+
+      <button class="btn" id="loopBtn" type="button" title="Loop whole clip (\)">
+        <svg viewBox="0 0 24 24" width="20" height="20">
+          <path d="M17 1l4 4-4 4V6H7a4 4 0 000 8h1v2H7A6 6 0 017 4h10V1zm0 7h-1v2h1a4 4 0 010 8H7v-3l-4 4 4 4v-3h10a6 6 0 000-12z" fill="currentColor"></path>
+        </svg>
+      </button>
+
+      <button class="btn btn-loop-point" id="setABtn" type="button" title="Set loop A ([)">A</button>
+      <button class="btn btn-loop-point" id="setBBtn" type="button" title="Set loop B (])">B</button>
 
       <div class="vol">
         <button class="btn" id="muteBtn" type="button" title="Mute (M)">
