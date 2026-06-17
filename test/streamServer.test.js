@@ -350,6 +350,19 @@ test('Content-Type by extension: .mp4 -> video/mp4', async (t) => {
     server.unregister(tok);
 });
 
+test('Content-Type by extension: .webm -> video/webm', async (t) => {
+    const server = await freshServer(t);
+    const port = server.getPort();
+    const file = makeTempFile(Buffer.from('webm'), '.webm');
+    const tok = server.register(file);
+
+    const res = await requestToken(port, tok, { method: 'GET' });
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.headers['content-type'], 'video/webm');
+
+    server.unregister(tok);
+});
+
 test('Content-Type by extension: .mp3 -> audio/mpeg', async (t) => {
     const server = await freshServer(t);
     const port = server.getPort();
