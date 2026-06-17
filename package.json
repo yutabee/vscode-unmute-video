@@ -63,6 +63,12 @@
           "default": "",
           "scope": "machine",
           "markdownDescription": "Absolute path to an [ffmpeg](https://ffmpeg.org/download.html) binary. Leave empty to auto-detect ffmpeg."
+        },
+        "unmuteVideo.seekStep": {
+          "type": "number",
+          "default": 10,
+          "minimum": 0.1,
+          "markdownDescription": "Seek step in seconds for the J/L keys and left/right arrows."
         }
       }
     },

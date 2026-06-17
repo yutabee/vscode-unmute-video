@@ -11,7 +11,14 @@
 
 /** Messages the extension host sends to the webview. */
 export type HostToWebview =
-    | { type: 'init'; name: string; audioPending: boolean; ffmpegMissing: boolean; nativeAudio: boolean }
+    | {
+        type: 'init';
+        name: string;
+        audioPending: boolean;
+        ffmpegMissing: boolean;
+        nativeAudio: boolean;
+        seekStep: number;
+    }
     | { type: 'videoSrc'; url: string; nativeAudio: boolean }
     | { type: 'audioSrc'; url: string }
     | { type: 'audioNone' }

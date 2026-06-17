@@ -5,6 +5,7 @@ import * as crypto from 'crypto';
 import { StreamServer } from './streamServer';
 import { AudioExtractionController } from './audioExtractionController';
 import { isNativeAudioFormat } from './mediaFormat';
+import { resolveSeekStep } from './config';
 import type { HostToWebview, WebviewToHost } from './protocol';
 
 /**
@@ -39,6 +40,7 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
     ): Promise<void> {
         const fsPath = document.uri.fsPath;
         const nativeAudio = isNativeAudioFormat(fsPath);
+        const seekStep = resolveSeekStep(vscode.workspace.getConfiguration('unmuteVideo').get('seekStep'));
         const mediaDir = vscode.Uri.joinPath(this.context.extensionUri, 'media');
         const webview = webviewPanel.webview;
 
@@ -58,7 +60,7 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
             void webview.postMessage(message);
         };
 
-        const audio = nativeAudio ? null : new AudioExtractionController(this.server, fsPath, post);
+        const audio = nativeAudio ? null : new AudioExtractionController(this.server, fsPath, post, seekStep);
 
         const postInit = (audioPending: boolean, ffmpegMissing: boolean, initNativeAudio: boolean): void => {
             post({
@@ -67,6 +69,7 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
                 audioPending,
                 ffmpegMissing,
                 nativeAudio: initNativeAudio,
+                seekStep,
             });
         };
 

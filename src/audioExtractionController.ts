@@ -19,6 +19,7 @@ export class AudioExtractionController {
         private readonly server: StreamServer,
         private readonly fsPath: string,
         private readonly post: (message: HostToWebview) => void,
+        private readonly seekStep: number,
     ) {}
 
     /**
@@ -88,6 +89,7 @@ export class AudioExtractionController {
             audioPending,
             ffmpegMissing,
             nativeAudio: false,
+            seekStep: this.seekStep,
         });
     }
 }

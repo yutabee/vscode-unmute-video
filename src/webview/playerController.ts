@@ -1,5 +1,6 @@
 import type { WebviewToHost } from "../protocol";
 
+import { FRAME_STEP_SECONDS } from "../config";
 import { els } from "./dom";
 import { clearStatus, flashFeedback, showStatus } from "./status";
 import { clamp, formatTime, latestBufferedEnd } from "./util";
@@ -8,6 +9,7 @@ export class PlayerController {
   /** The separate audible mp3 track, created when 'audioSrc' arrives. */
   private audio: HTMLAudioElement | null = null;
   private videoCarriesAudio = false;
+  private seekStep = 10;
   // User's intended mute state, independent of which element is currently
   // audible -- so muting before the audio track attaches is preserved.
   private userMuted = false;
@@ -37,6 +39,14 @@ export class PlayerController {
   public setNativeAudio(on: boolean): void {
     this.videoCarriesAudio = on;
     this.applyAudible();
+  }
+
+  public setSeekStep(step: number): void {
+    this.seekStep = step;
+  }
+
+  public getSeekStep(): number {
+    return this.seekStep;
   }
 
   public attachVideo(url: string, nativeAudio: boolean): void {
@@ -117,6 +127,11 @@ export class PlayerController {
 
   public nudge(delta: number): void {
     this.seekTo(els.video.currentTime + delta);
+  }
+
+  public frameStep(direction: number): void {
+    this.pause();
+    this.seekTo(els.video.currentTime + direction * FRAME_STEP_SECONDS);
   }
 
   public applyRate(): void {
