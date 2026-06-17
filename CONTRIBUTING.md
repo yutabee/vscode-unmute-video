@@ -26,7 +26,7 @@ with the extension loaded, then open a `.mp4` / `.mov` / `.m4v` file.
 
 ### Generated artifacts — do not commit
 
-`media/player.js` is **compiled** from `src/webview/player.ts` and is
+`media/player.js` is **bundled** by esbuild from `src/webview/main.ts` and is
 **git-ignored**. Never commit it. The build (and `vsce`'s `vscode:prepublish`)
 regenerates it. If you see it in `git status`, your `.gitignore` is fine — git
 just isn't tracking it; leave it out of commits and PRs.
@@ -37,10 +37,11 @@ just isn't tracking it; leave it out of commits and PRs.
 | --- | --- |
 | `src/extension.ts` | activation: start the stream server, register the editor + command |
 | `src/streamServer.ts` | loopback HTTP server, token-gated, HTTP Range streaming |
-| `src/playerEditorProvider.ts` | custom editor: ffmpeg audio extraction, webview wiring |
+| `src/playerEditorProvider.ts` | custom editor: webview wiring, video token, trust handling |
+| `src/audioExtractionController.ts` | per-editor audio-extraction lifecycle (ffmpeg → mp3 → stream token) |
 | `src/audio.ts` | ffmpeg discovery + audio extraction (no `vscode` import, unit-testable) |
-| `src/protocol.d.ts` | host ↔ webview message types (global ambient), shared by both ends |
-| `src/webview/player.ts` | in-webview player UI + audio/video sync (compiles to `media/player.js`) |
+| `src/protocol.ts` | host ↔ webview message types (type-only module), shared by both ends |
+| `src/webview/` | in-webview player, bundled to `media/player.js`: `main.ts` (entry + wiring), `playerController.ts` (video/audio sync + drift), `seekbar.ts`, `dom.ts`, `status.ts`, `util.ts` (pure, unit-tested helpers) |
 | `media/player.html`, `player.css` | webview markup + styles |
 
 ## Making a change

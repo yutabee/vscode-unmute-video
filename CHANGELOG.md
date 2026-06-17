@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Internal refactor (no behaviour change): the webview is now bundled by esbuild
+  from `src/webview/main.ts`, and the 575-line player script is split into focused
+  modules (`playerController`, `seekbar`, `dom`, `status`, `util`). The shared
+  message protocol moved from a global ambient `.d.ts` to a type-only module, the
+  two ffmpeg-probe caches were unified into one memoizer, and the audio-extraction
+  lifecycle moved into `AudioExtractionController`.
+
 ## [0.1.1] - 2026-06-17
 
 ### Fixed

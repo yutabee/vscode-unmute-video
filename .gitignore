@@ -7,5 +7,5 @@ out/
 .env
 .env.*
 
-# Build output: media/player.js is compiled from src/webview/player.ts
+# Build output: media/player.js is bundled by esbuild from src/webview/main.ts
 media/player.js

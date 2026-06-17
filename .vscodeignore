@@ -2,6 +2,7 @@
 .github/**
 src/**
 test/**
+out/webview/**
 docs/**
 node_modules/**
 images/icon.svg
