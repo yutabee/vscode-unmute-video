@@ -34,8 +34,10 @@ window.addEventListener("message", function (event: MessageEvent<HostToWebview>)
     case "init":
       els.fileLabel.textContent = msg.name || "";
       els.fileLabel.title = msg.name || "";
+      controller.setResumeTime(msg.resumeTime || 0);
       controller.setNativeAudio(!!msg.nativeAudio);
       controller.setSeekStep(msg.seekStep);
+      controller.applyPreferences(msg.preferences);
       if (msg.audioPending) {
         showStatus("Extracting audio…", "loading");
       } else if (msg.ffmpegMissing) {
@@ -48,6 +50,10 @@ window.addEventListener("message", function (event: MessageEvent<HostToWebview>)
     case "videoSrc":
       // Assign directly so the media element streams via HTTP Range.
       controller.attachVideo(msg.url, !!msg.nativeAudio);
+      break;
+
+    case "subtitles":
+      controller.attachSubtitles(msg.vtt, msg.label);
       break;
 
     case "audioSrc":
@@ -83,6 +89,16 @@ els.fwd10Btn.addEventListener("click", function () {
   controller.nudge(10);
 });
 
+els.loopBtn.addEventListener("click", function () {
+  controller.toggleWholeLoop();
+});
+els.setABtn.addEventListener("click", function () {
+  controller.setLoopA();
+});
+els.setBBtn.addEventListener("click", function () {
+  controller.setLoopB();
+});
+
 els.muteBtn.addEventListener("click", function () {
   controller.toggleMute();
 });
@@ -92,6 +108,9 @@ els.volSlider.addEventListener("input", function () {
 
 els.speedBtn.addEventListener("click", function () {
   controller.cycleSpeed();
+});
+els.subBtn.addEventListener("click", function () {
+  controller.toggleSubtitles();
 });
 
 // ----- Picture in Picture -----
@@ -158,6 +177,10 @@ document.addEventListener("keydown", function (evt) {
     case "M":
       controller.toggleMute();
       break;
+    case "c":
+    case "C":
+      controller.toggleSubtitles();
+      break;
     case "j":
     case "J":
     case "ArrowLeft":
@@ -173,6 +196,15 @@ document.addEventListener("keydown", function (evt) {
       break;
     case ".":
       controller.frameStep(1);
+      break;
+    case "[":
+      controller.setLoopA();
+      break;
+    case "]":
+      controller.setLoopB();
+      break;
+    case "\\":
+      controller.toggleWholeLoop();
       break;
     case "p":
     case "P":
