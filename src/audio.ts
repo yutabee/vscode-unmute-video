@@ -298,9 +298,9 @@ function runFfmpeg(ffmpeg: string, args: string[]): Promise<void> {
 
 function makeFfmpegError(message: string, stderr: string): Error {
     const detail = stderr.trim();
-    const err = new Error(detail ? `${message}: ${detail}` : message);
+    const err: Error & { noAudio?: boolean } = new Error(detail ? `${message}: ${detail}` : message);
     if (isNoAudioStderr(stderr)) {
-        (err as any).noAudio = true;
+        err.noAudio = true;
     }
     return err;
 }
