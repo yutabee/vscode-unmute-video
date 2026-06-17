@@ -19,24 +19,14 @@ const FFMPEG_CANDIDATES = [
 const CACHE_DIR = path.join(os.tmpdir(), 'unmute-video-cache');
 const STDERR_TAIL_LIMIT = 16 * 1024;
 
-/**
- * Cached discovery result, shared across the host session.
- *   undefined -> not yet probed
- *   null      -> probed, none found
- *   string    -> probed, this binary works
- */
-let ffmpegCache: string | null | undefined = undefined;
-let ffmpegCachePromise: Promise<string | null> | undefined;
-const overrideFfmpegCache = new Map<string, string | null>();
-const overrideFfmpegPromises = new Map<string, Promise<string | null>>();
+const probeResults = new Map<string, string | null>();
+const probeInFlight = new Map<string, Promise<string | null>>();
 const inFlightExtractions = new Map<string, Promise<string>>();
 
 /** For tests: forget the cached probe result. */
 export function resetFfmpegCache(): void {
-    ffmpegCache = undefined;
-    ffmpegCachePromise = undefined;
-    overrideFfmpegCache.clear();
-    overrideFfmpegPromises.clear();
+    probeResults.clear();
+    probeInFlight.clear();
 }
 
 /**
@@ -123,50 +113,48 @@ function ensureTrailingSeparator(value: string): string {
  */
 export async function findFfmpeg(override?: string): Promise<string | null> {
     const overridePath = typeof override === 'string' ? override.trim() : '';
-    if (overridePath !== '') {
-        const cached = overrideFfmpegCache.get(overridePath);
-        if (cached !== undefined) {
-            return cached;
-        }
-        const pending = overrideFfmpegPromises.get(overridePath);
-        if (pending !== undefined) {
-            return pending;
-        }
-        const promise = (async () => {
-            if (await probeFfmpeg(overridePath)) {
-                overrideFfmpegCache.set(overridePath, overridePath);
-                return overridePath;
-            }
-            const fallback = await findFfmpeg();
-            overrideFfmpegCache.set(overridePath, fallback);
-            return fallback;
-        })().finally(() => {
-            overrideFfmpegPromises.delete(overridePath);
-        });
-        overrideFfmpegPromises.set(overridePath, promise);
-        return promise;
+    if (overridePath === '') {
+        return memoizedProbe('', probeDefaultFfmpeg);
     }
 
-    if (ffmpegCache !== undefined) {
-        return ffmpegCache;
-    }
-    if (ffmpegCachePromise !== undefined) {
-        return ffmpegCachePromise;
-    }
-    ffmpegCachePromise = probeDefaultFfmpeg().finally(() => {
-        ffmpegCachePromise = undefined;
+    return memoizedProbe(overridePath, async () => {
+        if (await probeFfmpeg(overridePath)) {
+            return overridePath;
+        }
+        return findFfmpeg();
     });
-    return ffmpegCachePromise;
+}
+
+function memoizedProbe(key: string, compute: () => Promise<string | null>): Promise<string | null> {
+    if (probeResults.has(key)) {
+        return Promise.resolve(probeResults.get(key) as string | null);
+    }
+    const pending = probeInFlight.get(key);
+    if (pending !== undefined) {
+        return pending;
+    }
+    const promise = compute()
+        .then((result) => {
+            if (probeInFlight.get(key) === promise) {
+                probeResults.set(key, result);
+            }
+            return result;
+        })
+        .finally(() => {
+            if (probeInFlight.get(key) === promise) {
+                probeInFlight.delete(key);
+            }
+        });
+    probeInFlight.set(key, promise);
+    return promise;
 }
 
 async function probeDefaultFfmpeg(): Promise<string | null> {
     for (const bin of FFMPEG_CANDIDATES) {
         if (await probeFfmpeg(bin)) {
-            ffmpegCache = bin;
             return bin;
         }
     }
-    ffmpegCache = null;
     return null;
 }
 
