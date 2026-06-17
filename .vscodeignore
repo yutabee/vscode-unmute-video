@@ -8,5 +8,7 @@ images/icon.svg
 **/*.map
 **/*.ts
 *.vsix
+.env
+.env.*
 .gitignore
 .vscodeignore

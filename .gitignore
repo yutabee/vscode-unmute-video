@@ -3,5 +3,9 @@ out/
 *.vsix
 .DS_Store
 
+# Local secrets — never commit (holds VSCE_PAT / OVSX_PAT etc.)
+.env
+.env.*
+
 # Build output: media/player.js is compiled from src/webview/player.ts
 media/player.js
