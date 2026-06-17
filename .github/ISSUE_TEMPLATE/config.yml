@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and usage help
+    url: https://github.com/yutabee/vscode-unmute-video/issues
+    about: Check the README first, then use GitHub issues if the bug or feature forms do not fit.
+  - name: Marketplace Q&A
+    url: https://marketplace.visualstudio.com/items?itemName=yutabee.unmute-video&ssr=false#qna
+    about: Use the Marketplace Q&A for extension listing questions after the first Marketplace publish.
