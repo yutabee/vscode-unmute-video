@@ -13,33 +13,15 @@
 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const os = require('node:os');
-const path = require('node:path');
 
 const { findFfmpeg, resetFfmpegCache } = require('../out/audio.js');
+const { createCleanup, makeProbeFake, makeTempDir } = require('../test-support');
 
 const BOGUS = '/nonexistent/path/does/not/exist/ffmpeg-bogus-xyz';
 const isWindows = process.platform === 'win32';
 
-// A fake ffmpeg: a node shebang script that records each `-version` probe by
-// appending a byte to a counter file, then exits with the given code (0 =
-// "this binary works", non-zero = "probe fails"). Unix-only (shebang +x).
-function makeFakeFfmpeg(dir, name, exitCode) {
-  const counter = path.join(dir, `${name}.count`);
-  const bin = path.join(dir, name);
-  const script =
-    '#!/usr/bin/env node\n' +
-    `require('fs').appendFileSync(${JSON.stringify(counter)}, 'x');\n` +
-    `process.exit(${exitCode});\n`;
-  fs.writeFileSync(bin, script, { mode: 0o755 });
-  return {
-    bin,
-    probeCount: () => (fs.existsSync(counter) ? fs.readFileSync(counter, 'utf8').length : 0),
-  };
-}
-
 let workDir = '';
+const cleanup = createCleanup();
 
 test('findFfmpeg(): default probe result is stable across calls (cached)', async () => {
   resetFfmpegCache();
@@ -97,8 +79,8 @@ test('findFfmpeg(override): an empty/whitespace override behaves like no overrid
 
 test('findFfmpeg(override): a working override is probed exactly once, then cached', async (t) => {
   if (isWindows) { t.skip('fake exec relies on a unix shebang'); return; }
-  workDir = fs.mkdtempSync(path.join(os.tmpdir(), 'unmute-ffmpegcache-'));
-  const fake = makeFakeFfmpeg(workDir, 'ffmpeg-ok', 0);
+  workDir = cleanup.track(makeTempDir('unmute-ffmpegcache'));
+  const fake = makeProbeFake(workDir, 'ffmpeg-ok', 0);
 
   resetFfmpegCache();
   assert.equal(await findFfmpeg(fake.bin), fake.bin, 'working override returned verbatim');
@@ -110,8 +92,8 @@ test('findFfmpeg(override): a working override is probed exactly once, then cach
 
 test('findFfmpeg(override): concurrent identical overrides probe only once (in-flight dedup)', async (t) => {
   if (isWindows) { t.skip('fake exec relies on a unix shebang'); return; }
-  workDir = workDir || fs.mkdtempSync(path.join(os.tmpdir(), 'unmute-ffmpegcache-'));
-  const fake = makeFakeFfmpeg(workDir, 'ffmpeg-concurrent', 0);
+  workDir = workDir || cleanup.track(makeTempDir('unmute-ffmpegcache'));
+  const fake = makeProbeFake(workDir, 'ffmpeg-concurrent', 0);
 
   resetFfmpegCache();
   const results = await Promise.all([
@@ -125,8 +107,8 @@ test('findFfmpeg(override): concurrent identical overrides probe only once (in-f
 
 test('findFfmpeg(override): a failing override is probed once, then falls back to the default', async (t) => {
   if (isWindows) { t.skip('fake exec relies on a unix shebang'); return; }
-  workDir = workDir || fs.mkdtempSync(path.join(os.tmpdir(), 'unmute-ffmpegcache-'));
-  const failing = makeFakeFfmpeg(workDir, 'ffmpeg-fail', 1);
+  workDir = workDir || cleanup.track(makeTempDir('unmute-ffmpegcache'));
+  const failing = makeProbeFake(workDir, 'ffmpeg-fail', 1);
 
   resetFfmpegCache();
   const def = await findFfmpeg();
@@ -137,7 +119,5 @@ test('findFfmpeg(override): a failing override is probed once, then falls back t
 });
 
 test.after(() => {
-  if (workDir) {
-    try { fs.rmSync(workDir, { recursive: true, force: true }); } catch { /* ignore */ }
-  }
+  cleanup.run();
 });

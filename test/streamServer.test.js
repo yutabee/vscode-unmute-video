@@ -4,17 +4,17 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('node:http');
 const fs = require('node:fs');
-const os = require('node:os');
 const path = require('node:path');
 
 const { StreamServer } = require('../out/streamServer.js');
+const { makeTempDir } = require('../test-support/tmp.js');
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 /** A scratch directory unique to this test run. */
-const TMP_ROOT = fs.mkdtempSync(path.join(os.tmpdir(), 'streamserver-test-'));
+const TMP_ROOT = makeTempDir('streamserver-test');
 
 /**
  * Write a temp file with the given contents (string or Buffer) and a given
