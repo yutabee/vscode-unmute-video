@@ -1,0 +1,31 @@
+export const els = {
+  player: document.getElementById("player") as HTMLElement,
+  stage: document.getElementById("stage") as HTMLElement,
+  video: document.getElementById("video") as HTMLVideoElement,
+  fileLabel: document.getElementById("fileLabel") as HTMLElement,
+  flash: document.getElementById("flash") as HTMLElement,
+  flashIcon: document.getElementById("flashIcon") as HTMLElement,
+
+  seek: document.getElementById("seek") as HTMLElement,
+  seekBuffered: document.getElementById("seekBuffered") as HTMLElement,
+  seekPlayed: document.getElementById("seekPlayed") as HTMLElement,
+  seekHandle: document.getElementById("seekHandle") as HTMLElement,
+
+  playBtn: document.getElementById("playBtn") as HTMLButtonElement,
+  back10Btn: document.getElementById("back10Btn") as HTMLButtonElement,
+  fwd10Btn: document.getElementById("fwd10Btn") as HTMLButtonElement,
+  muteBtn: document.getElementById("muteBtn") as HTMLButtonElement,
+  volSlider: document.getElementById("volSlider") as HTMLInputElement,
+  timeCur: document.getElementById("timeCur") as HTMLElement,
+  timeDur: document.getElementById("timeDur") as HTMLElement,
+  speedBtn: document.getElementById("speedBtn") as HTMLButtonElement,
+  pipBtn: document.getElementById("pipBtn") as HTMLButtonElement,
+  fsBtn: document.getElementById("fsBtn") as HTMLButtonElement,
+
+  status: document.getElementById("status") as HTMLElement,
+  statusSpinner: document.getElementById("statusSpinner") as HTMLElement,
+  statusText: document.getElementById("statusText") as HTMLElement,
+
+  openExternalBtn: document.getElementById("openExternalBtn") as HTMLButtonElement,
+  copyPathBtn: document.getElementById("copyPathBtn") as HTMLButtonElement,
+};
