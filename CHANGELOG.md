@@ -1,6 +1,15 @@
 # Changelog
 
-## 0.1.0
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [0.1.0] - 2026-06-17
+
+### Added
 
 - Initial release.
 - Custom editor for `.mp4` / `.mov` / `.m4v`.
@@ -8,5 +17,5 @@
 - ffmpeg-based audio extraction (MP3) synced to the muted video, working around
   the missing AAC codec in the VS Code webview.
 - Player UI: play/pause, seek, 10s skip, volume/mute, playback speed,
-  picture-in-picture, hold-to-2× boost, keyboard shortcuts, copy path,
-  open in external player.
+  picture-in-picture, fullscreen, keyboard shortcuts, copy path, and open in
+  external player.

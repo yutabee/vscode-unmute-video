@@ -1,0 +1,77 @@
+name: Bug report
+description: Report a playback, audio, or extension bug.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: checkboxes
+    id: existing-issues
+    attributes:
+      label: Before opening this issue
+      options:
+        - label: I searched existing issues and did not find a matching report.
+          required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe what you expected and what actually happened.
+      placeholder: The video opened, but...
+    validations:
+      required: true
+  - type: dropdown
+    id: symptom
+    attributes:
+      label: Symptom
+      options:
+        - Video plays but is silent
+        - Video does not play at all
+        - Audio out of sync
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: Steps to reproduce
+      description: List the smallest set of steps that reproduces the problem.
+      placeholder: |
+        1. Open...
+        2. Run...
+        3. See...
+  - type: input
+    id: vscode-version
+    attributes:
+      label: VS Code version
+      placeholder: "1.90.0"
+    validations:
+      required: true
+  - type: input
+    id: os-version
+    attributes:
+      label: OS and version
+      placeholder: "macOS 14.5, Windows 11 23H2, Ubuntu 24.04, etc."
+    validations:
+      required: true
+  - type: input
+    id: ffmpeg-version
+    attributes:
+      label: ffmpeg present? Paste the first line of `ffmpeg -version`
+      placeholder: "ffmpeg version 7.0.1 ..."
+  - type: input
+    id: ffmpeg-path
+    attributes:
+      label: "`unmuteVideo.ffmpegPath` setting value"
+      description: Leave blank if the setting is unset.
+      placeholder: "/opt/homebrew/bin/ffmpeg"
+  - type: input
+    id: media-info
+    attributes:
+      label: File container/extension and audio codec
+      description: Include the audio codec if you know it.
+      placeholder: ".mp4, AAC"
+  - type: textarea
+    id: logs-screenshots
+    attributes:
+      label: Logs or screenshots
+      description: Paste relevant logs, errors, screenshots, or screen recordings.
+      render: shell

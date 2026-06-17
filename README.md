@@ -1,5 +1,15 @@
 # Video Player (with Audio) — `vscode-unmute-video`
 
+[![CI](https://github.com/yutabee/vscode-unmute-video/actions/workflows/ci.yml/badge.svg)](https://github.com/yutabee/vscode-unmute-video/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.md)
+
+<!-- uncomment after the first Marketplace/Open VSX publish -->
+<!-- [![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/yutabee.unmute-video)](https://marketplace.visualstudio.com/items?itemName=yutabee.unmute-video) -->
+<!-- [![Visual Studio Marketplace Installs](https://img.shields.io/visual-studio-marketplace/i/yutabee.unmute-video)](https://marketplace.visualstudio.com/items?itemName=yutabee.unmute-video) -->
+<!-- [![Open VSX Version](https://img.shields.io/open-vsx/v/yutabee/unmute-video)](https://open-vsx.org/extension/yutabee/unmute-video) -->
+
+<!-- TODO: add a demo GIF at images/demo.gif and embed it here once recorded -->
+
 Play `.mp4` / `.mov` / `.m4v` videos **with sound** directly inside VS Code.
 
 ## Why this exists
@@ -23,14 +33,56 @@ but stays silent. This extension works around that:
   - Ubuntu/Debian: `sudo apt install ffmpeg`
   - Windows: install ffmpeg and ensure `ffmpeg.exe` is reachable
 
+## Install
+
+- In VS Code, open the Extensions view and search for
+  **Video Player (with Audio)**.
+- Or use Quick Open and run `ext install yutabee.unmute-video`.
+- For VSCodium/Cursor, install from Open VSX once it is published there.
+
 ## Usage
 
 - Open any `.mp4` / `.mov` / `.m4v` file from the Explorer — it opens in the
   player automatically.
 - Or run **"Open with Video Player (with Audio)"** from the Command Palette.
 
-Controls: `space`/`k` play-pause, `j`/`l` (or ←/→) seek ±10s, `m` mute,
-`f` fullscreen, `p` picture-in-picture; the speed button cycles 0.5×–2×.
+Controls: click the stage or use `space`/`k` to play-pause, `j`/`l` (or ←/→)
+to seek ±10s, `m` to mute, the volume slider to adjust audio, `f` for
+fullscreen, and `p` for picture-in-picture when the host supports it. The speed
+button cycles 0.5×–2×. The action buttons copy the file path or open the file in
+an external player.
+
+## Default editor
+
+The extension registers as the default editor for `.mp4`, `.mov`, and `.m4v`
+files. To opt out for a file type or glob, map it back to the built-in editor in
+`workbench.editorAssociations`:
+
+```json
+{
+  "workbench.editorAssociations": {
+    "*.mp4": "default",
+    "*.mov": "default",
+    "*.m4v": "default"
+  }
+}
+```
+
+## Limitations
+
+- `ffmpeg` must be installed on the same machine as the extension host.
+- In Remote-SSH, WSL, and Codespaces, the extension runs on the remote machine;
+  `ffmpeg` and the video files need to be available there.
+- Virtual and web workspaces are not supported because the player needs a real
+  on-disk path.
+- Without `ffmpeg`, the video still plays, but silently.
+
+## Security
+
+Media is streamed from a loopback-only, token-gated HTTP server with a strict
+Host-header check. The webview uses a tight CSP, and `ffmpeg` is invoked without
+a shell. See [SECURITY.md](SECURITY.md) for the disclosure process and full
+security model.
 
 ## Develop
 
@@ -56,7 +108,7 @@ Press <kbd>F5</kbd> ("Run Extension") to launch an Extension Development Host.
 | `src/streamServer.ts` | loopback HTTP server, token-gated, HTTP Range streaming |
 | `src/playerEditorProvider.ts` | custom editor: ffmpeg audio extraction, webview wiring |
 | `src/audio.ts` | ffmpeg discovery + audio extraction (no `vscode` import) |
-| `src/protocol.ts` | host ↔ webview message types, shared by both ends |
+| `src/protocol.d.ts` | host ↔ webview message types, shared by both ends |
 | `src/webview/player.ts` | in-webview player UI + audio/video sync (compiles to `media/player.js`) |
 | `media/player.html` / `player.css` | webview markup + styles |
 
