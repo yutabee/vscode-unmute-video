@@ -1,4 +1,7 @@
+import { ALLOWED_RATES, clampPreferences } from "../preferences";
+import type { Preferences } from "../preferences";
 import type { WebviewToHost } from "../protocol";
+import { RESUME_END_THRESHOLD_SEC, shouldResume } from "../resume";
 
 import { nextLoopTarget, type LoopState } from "./abLoop";
 import { els } from "./dom";
@@ -9,13 +12,19 @@ import { clamp, formatTime, latestBufferedEnd } from "./util";
 export class PlayerController {
   /** The separate audible mp3 track, created when 'audioSrc' arrives. */
   private audio: HTMLAudioElement | null = null;
+  private subtitlesUrl: string | null = null;
   private videoCarriesAudio = false;
   // User's intended mute state, independent of which element is currently
   // audible -- so muting before the audio track attaches is preserved.
   private userMuted = false;
-  private readonly SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2];
+  private readonly SPEEDS: readonly number[] = ALLOWED_RATES;
   private speedIndex = this.SPEEDS.indexOf(1);
+  private volumePreferenceSaveTimeout: number | undefined;
+  private hasPendingVolumePreferenceSave = false;
   private readonly DRIFT_THRESHOLD = 0.3;
+  private readonly PROGRESS_SAVE_DELTA_SEC = 5;
+  private resumeTime = 0;
+  private lastSavedTime = 0;
   private loop: LoopState = { a: null, b: null, whole: false, duration: 0 };
   // Whether a drag-scrub is in progress. Wired by the Seekbar via
   // setScrubProvider so the timeupdate handler can skip redrawing the bar
@@ -40,6 +49,23 @@ export class PlayerController {
   public setNativeAudio(on: boolean): void {
     this.videoCarriesAudio = on;
     this.applyAudible();
+  }
+
+  public applyPreferences(p: Preferences): void {
+    const preferences = clampPreferences(p);
+    els.volSlider.value = String(preferences.volume);
+    this.userMuted = preferences.muted;
+
+    const preferredIndex = this.SPEEDS.indexOf(preferences.playbackRate);
+    this.speedIndex = preferredIndex === -1 ? this.SPEEDS.indexOf(1) : preferredIndex;
+
+    this.applyRate();
+    this.applyAudible();
+  }
+
+  public setResumeTime(time: number): void {
+    this.resumeTime = Number.isFinite(time) && time > 0 ? time : 0;
+    this.lastSavedTime = this.resumeTime;
   }
 
   public attachVideo(url: string, nativeAudio: boolean): void {
@@ -165,6 +191,7 @@ export class PlayerController {
   public cycleSpeed(): void {
     this.speedIndex = (this.speedIndex + 1) % this.SPEEDS.length;
     this.applyRate();
+    this.emitPreferences();
   }
 
   // Apply the current volume + mute intent to whichever element is audible,
@@ -189,11 +216,49 @@ export class PlayerController {
       this.userMuted = false;
     }
     this.applyAudible();
+    this.queueVolumePreferences();
   }
 
   public toggleMute(): void {
     this.userMuted = !this.userMuted;
     this.applyAudible();
+    this.emitPreferences();
+  }
+
+  private emitPreferences(): void {
+    this.hasPendingVolumePreferenceSave = false;
+    this.postMessage({
+      type: "savePreferences",
+      preferences: {
+        volume: parseFloat(els.volSlider.value),
+        muted: this.userMuted,
+        playbackRate: this.SPEEDS[this.speedIndex],
+      },
+    });
+  }
+
+  private queueVolumePreferences(): void {
+    if (this.volumePreferenceSaveTimeout === undefined) {
+      this.emitPreferences();
+      this.volumePreferenceSaveTimeout = window.setTimeout(() => {
+        this.flushVolumePreferences();
+      }, 400);
+      return;
+    }
+
+    this.hasPendingVolumePreferenceSave = true;
+  }
+
+  private flushVolumePreferences(): void {
+    if (this.hasPendingVolumePreferenceSave) {
+      this.emitPreferences();
+      this.volumePreferenceSaveTimeout = window.setTimeout(() => {
+        this.flushVolumePreferences();
+      }, 400);
+      return;
+    }
+
+    this.volumePreferenceSaveTimeout = undefined;
   }
 
   private updateMuteUi(): void {
@@ -235,6 +300,33 @@ export class PlayerController {
     clearStatus();
   }
 
+  public attachSubtitles(vtt: string, label: string): void {
+    if (this.subtitlesUrl !== null) {
+      URL.revokeObjectURL(this.subtitlesUrl);
+    }
+
+    const blob = new Blob([vtt], { type: "text/vtt" });
+    this.subtitlesUrl = URL.createObjectURL(blob);
+    els.track.src = this.subtitlesUrl;
+    els.track.label = label;
+    els.track.track.mode = "hidden";
+    els.subBtn.hidden = false;
+    els.subBtn.setAttribute("aria-pressed", "false");
+    els.player.classList.remove("is-subtitles-on");
+  }
+
+  public toggleSubtitles(): void {
+    if (els.video.textTracks.length === 0 || els.subBtn.hidden) {
+      return;
+    }
+
+    const track = els.video.textTracks[0];
+    const showing = track.mode !== "showing";
+    track.mode = showing ? "showing" : "hidden";
+    els.player.classList.toggle("is-subtitles-on", showing);
+    els.subBtn.setAttribute("aria-pressed", showing ? "true" : "false");
+  }
+
   private correctDrift(): void {
     if (!this.audio) {
       return;
@@ -243,6 +335,24 @@ export class PlayerController {
       if (Math.abs(this.audio.currentTime - els.video.currentTime) > this.DRIFT_THRESHOLD) {
         this.audio.currentTime = els.video.currentTime;
       }
+    }
+  }
+
+  private postProgress(time: number): void {
+    if (!Number.isFinite(time)) {
+      return;
+    }
+    this.lastSavedTime = time;
+    this.postMessage({ type: "progress", time });
+  }
+
+  private postProgressIfNeeded(): void {
+    const time = els.video.currentTime;
+    if (!Number.isFinite(time)) {
+      return;
+    }
+    if (Math.abs(time - this.lastSavedTime) >= this.PROGRESS_SAVE_DELTA_SEC) {
+      this.postProgress(time);
     }
   }
 
@@ -302,6 +412,9 @@ export class PlayerController {
       els.timeDur.textContent = formatTime(els.video.duration);
       this.refreshLoopUi();
       this.renderProgress();
+      if (shouldResume(this.resumeTime, els.video.duration, RESUME_END_THRESHOLD_SEC)) {
+        this.seekTo(this.resumeTime);
+      }
     });
 
     els.video.addEventListener("durationchange", () => {
@@ -318,6 +431,7 @@ export class PlayerController {
         return;
       }
       this.correctDrift();
+      this.postProgressIfNeeded();
     });
 
     els.video.addEventListener("progress", () => {
@@ -336,6 +450,7 @@ export class PlayerController {
       if (this.audio && !this.audio.paused) {
         this.audio.pause();
       }
+      this.postProgress(els.video.currentTime);
     });
 
     els.video.addEventListener("seeking", () => {

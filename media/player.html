@@ -12,7 +12,9 @@
 
     <!-- Video stage -->
     <div class="stage" id="stage">
-      <video id="video" muted playsinline preload="metadata"></video>
+      <video id="video" muted playsinline preload="metadata">
+        <track id="subTrack" kind="subtitles" default>
+      </video>
 
       <!-- Filename overlay -->
       <div class="file-label" id="fileLabel"></div>
@@ -81,6 +83,8 @@
       </div>
 
       <div class="spacer"></div>
+
+      <button class="btn btn-cc" id="subBtn" type="button" title="Subtitles (C)" aria-pressed="false" hidden>CC</button>
 
       <button class="btn btn-speed" id="speedBtn" type="button" title="Playback speed">1x</button>
 

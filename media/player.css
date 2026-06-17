@@ -270,6 +270,17 @@ html, body {
   background: var(--accent-dim);
 }
 
+.btn-cc {
+  min-width: 38px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.player.is-subtitles-on #subBtn {
+  background: var(--accent-dim);
+  color: #fff;
+}
+
 /* icon toggling */
 .ic-pause,
 .ic-muted,

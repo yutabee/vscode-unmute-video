@@ -5,7 +5,18 @@ import * as crypto from 'crypto';
 import { StreamServer } from './streamServer';
 import { AudioExtractionController } from './audioExtractionController';
 import { isNativeAudioFormat } from './mediaFormat';
+import { clampPreferences } from './preferences';
+import type { Preferences } from './preferences';
+import { resumeKey } from './resume';
+import { sidecarCandidates, srtToVtt } from './subtitles';
 import type { HostToWebview, WebviewToHost } from './protocol';
+
+const PREFS_KEY = 'unmuteVideo.preferences';
+
+type SidecarSubtitles = {
+    vtt: string;
+    label: string;
+};
 
 /**
  * Custom editor that plays .mp4/.mov/.m4v files WITH sound inside VS Code.
@@ -38,6 +49,8 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
         webviewPanel: vscode.WebviewPanel,
     ): Promise<void> {
         const fsPath = document.uri.fsPath;
+        const stateKey = resumeKey(fsPath);
+        const saved = this.context.workspaceState.get<number>(stateKey) ?? 0;
         const nativeAudio = isNativeAudioFormat(fsPath);
         const mediaDir = vscode.Uri.joinPath(this.context.extensionUri, 'media');
         const webview = webviewPanel.webview;
@@ -58,7 +71,16 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
             void webview.postMessage(message);
         };
 
-        const audio = nativeAudio ? null : new AudioExtractionController(this.server, fsPath, post);
+        const currentPreferences = (): Preferences => clampPreferences(this.context.globalState.get(PREFS_KEY));
+
+        const audio = nativeAudio ? null : new AudioExtractionController(this.server, fsPath, post, currentPreferences, saved);
+
+        const postSidecarSubtitles = (): void => {
+            const subtitles = this.readSidecarSubtitles(fsPath);
+            if (subtitles !== undefined) {
+                post({ type: 'subtitles', vtt: subtitles.vtt, label: subtitles.label });
+            }
+        };
 
         const postInit = (audioPending: boolean, ffmpegMissing: boolean, initNativeAudio: boolean): void => {
             post({
@@ -67,6 +89,8 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
                 audioPending,
                 ffmpegMissing,
                 nativeAudio: initNativeAudio,
+                resumeTime: saved,
+                preferences: currentPreferences(),
             });
         };
 
@@ -84,12 +108,14 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
                     if (nativeAudio) {
                         postInit(false, false, true);
                         post({ type: 'videoSrc', url: videoUrl, nativeAudio: true });
+                        postSidecarSubtitles();
                         return;
                     }
 
                     const trusted = vscode.workspace.isTrusted;
                     postInit(trusted, false, false);
                     post({ type: 'videoSrc', url: videoUrl, nativeAudio: false });
+                    postSidecarSubtitles();
 
                     if (trusted) {
                         audio?.start(false);
@@ -109,6 +135,13 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
                     break;
                 }
 
+                case 'progress': {
+                    if (Number.isFinite(message.time) && message.time > 0) {
+                        void this.context.workspaceState.update(stateKey, message.time);
+                    }
+                    break;
+                }
+
                 case 'action': {
                     if (message.name === 'openExternal') {
                         void vscode.env.openExternal(document.uri);
@@ -116,6 +149,11 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
                         void vscode.env.clipboard.writeText(fsPath);
                         void vscode.window.showInformationMessage('Unmute Video: file path copied to clipboard.');
                     }
+                    break;
+                }
+
+                case 'savePreferences': {
+                    void this.context.globalState.update(PREFS_KEY, clampPreferences(message.preferences));
                     break;
                 }
 
@@ -134,6 +172,28 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
         });
 
         webview.html = this.buildHtml(webview, mediaDir);
+    }
+
+    private readSidecarSubtitles(videoFsPath: string): SidecarSubtitles | undefined {
+        for (const candidate of sidecarCandidates(videoFsPath)) {
+            try {
+                if (!fs.existsSync(candidate) || !fs.statSync(candidate).isFile()) {
+                    continue;
+                }
+
+                const text = fs.readFileSync(candidate, 'utf8');
+                const vtt = path.extname(candidate).toLowerCase() === '.srt'
+                    ? srtToVtt(text)
+                    : text;
+                return {
+                    vtt,
+                    label: path.basename(candidate),
+                };
+            } catch {
+                return undefined;
+            }
+        }
+        return undefined;
     }
 
     /**
@@ -157,7 +217,7 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
             `style-src ${cspSource}`,
             `font-src ${cspSource}`,
             `script-src 'nonce-${nonce}'`,
-            `media-src http://127.0.0.1:${port}`,
+            `media-src http://127.0.0.1:${port} blob:`,
         ].join('; ');
 
         return template
