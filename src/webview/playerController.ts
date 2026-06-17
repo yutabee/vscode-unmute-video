@@ -5,6 +5,7 @@ import { RESUME_END_THRESHOLD_SEC, shouldResume } from "../resume";
 
 import { FRAME_STEP_SECONDS } from "../config";
 import { nextLoopTarget, type LoopState } from "./abLoop";
+import { driftAction } from "./sync";
 import { els } from "./dom";
 import { renderLoopMarkers } from "./seekbar";
 import { clearStatus, flashFeedback, showStatus } from "./status";
@@ -23,7 +24,6 @@ export class PlayerController {
   private speedIndex = this.SPEEDS.indexOf(1);
   private volumePreferenceSaveTimeout: number | undefined;
   private hasPendingVolumePreferenceSave = false;
-  private readonly DRIFT_THRESHOLD = 0.3;
   private readonly PROGRESS_SAVE_DELTA_SEC = 5;
   private resumeTime = 0;
   private lastSavedTime = 0;
@@ -342,14 +342,33 @@ export class PlayerController {
     els.subBtn.setAttribute("aria-pressed", showing ? "true" : "false");
   }
 
+  // Keep the audio track in step with the video clock without re-seeking every
+  // frame: nudge playbackRate for small drift, hard-seek only for large drift.
+  // Policy lives in the pure `driftAction` so it is unit-tested in isolation.
   private correctDrift(): void {
-    if (!this.audio) {
+    if (!this.audio || this.audio.paused || els.video.paused) {
       return;
     }
-    if (!this.audio.paused && !els.video.paused) {
-      if (Math.abs(this.audio.currentTime - els.video.currentTime) > this.DRIFT_THRESHOLD) {
-        this.audio.currentTime = els.video.currentTime;
-      }
+    // Don't fight an in-flight seek; the `seeked`/`seeking` handlers resync it.
+    if (this.audio.seeking || els.video.seeking) {
+      return;
+    }
+    const baseRate = this.SPEEDS[this.speedIndex];
+    const action = driftAction(this.audio.currentTime, els.video.currentTime, baseRate);
+    switch (action.kind) {
+      case "seek":
+        this.audio.currentTime = action.to;
+        this.audio.playbackRate = baseRate;
+        break;
+      case "rate":
+        this.audio.playbackRate = action.playbackRate;
+        break;
+      case "none":
+        // Back in sync: restore the user's intended rate (no-op if unchanged).
+        if (this.audio.playbackRate !== baseRate) {
+          this.audio.playbackRate = baseRate;
+        }
+        break;
     }
   }
 
