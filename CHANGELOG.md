@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-17
+
+### Added
+
+- Play `.webm` files using the video element's own audio track (no separate
+  ffmpeg extraction needed for natively-decodable formats).
+- Auto-detect a same-name `.srt` / `.vtt` sidecar next to the video and show it
+  as a toggleable subtitle track (`CC` button / `c` key). `.srt` is converted to
+  WebVTT on the fly.
+- Remember the last playback position per video and resume from it on reopen
+  (restarts from the beginning when you were within the final few seconds).
+- Persist volume, mute, and playback speed across videos and sessions.
+- A-B segment loop and whole-clip loop: mark an A point and a B point to loop a
+  region (`[` / `]` keys), or toggle looping the whole clip (`\` key).
+- Frame-by-frame stepping with `,` / `.`, and a new `unmuteVideo.seekStep`
+  setting to configure the J/L and arrow-key seek width (default 10s).
+
 ## [0.1.2] - 2026-06-17
 
 ### Changed
