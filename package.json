@@ -79,16 +79,16 @@
         "priority": "default",
         "selector": [
           {
-            "filenamePattern": "**/*.mp4"
+            "filenamePattern": "**/*.{mp4,MP4}"
           },
           {
-            "filenamePattern": "**/*.mov"
+            "filenamePattern": "**/*.{mov,MOV}"
           },
           {
-            "filenamePattern": "**/*.m4v"
+            "filenamePattern": "**/*.{m4v,M4V}"
           },
           {
-            "filenamePattern": "**/*.webm"
+            "filenamePattern": "**/*.{webm,WEBM}"
           }
         ]
       }
