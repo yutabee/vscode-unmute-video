@@ -36,6 +36,7 @@ window.addEventListener("message", function (event: MessageEvent<HostToWebview>)
       els.fileLabel.title = msg.name || "";
       controller.setResumeTime(msg.resumeTime || 0);
       controller.setNativeAudio(!!msg.nativeAudio);
+      controller.setSeekStep(msg.seekStep);
       controller.applyPreferences(msg.preferences);
       if (msg.audioPending) {
         showStatus("Extracting audio…", "loading");
@@ -183,12 +184,18 @@ document.addEventListener("keydown", function (evt) {
     case "j":
     case "J":
     case "ArrowLeft":
-      controller.nudge(-10);
+      controller.nudge(-controller.getSeekStep());
       break;
     case "l":
     case "L":
     case "ArrowRight":
-      controller.nudge(10);
+      controller.nudge(controller.getSeekStep());
+      break;
+    case ",":
+      controller.frameStep(-1);
+      break;
+    case ".":
+      controller.frameStep(1);
       break;
     case "[":
       controller.setLoopA();

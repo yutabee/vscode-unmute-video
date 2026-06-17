@@ -22,6 +22,7 @@ export class AudioExtractionController {
         private readonly post: (message: HostToWebview) => void,
         private readonly getPreferences: () => Preferences,
         private readonly resumeTime = 0,
+        private readonly seekStep = 10,
     ) {}
 
     /**
@@ -93,6 +94,7 @@ export class AudioExtractionController {
             nativeAudio: false,
             resumeTime: this.resumeTime,
             preferences: this.getPreferences(),
+            seekStep: this.seekStep,
         });
     }
 }

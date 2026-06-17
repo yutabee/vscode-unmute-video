@@ -13,7 +13,16 @@ import type { Preferences } from './preferences';
 
 /** Messages the extension host sends to the webview. */
 export type HostToWebview =
-    | { type: 'init'; name: string; audioPending: boolean; ffmpegMissing: boolean; nativeAudio: boolean; resumeTime: number; preferences: Preferences }
+    | {
+        type: 'init';
+        name: string;
+        audioPending: boolean;
+        ffmpegMissing: boolean;
+        nativeAudio: boolean;
+        resumeTime: number;
+        preferences: Preferences;
+        seekStep: number;
+    }
     | { type: 'videoSrc'; url: string; nativeAudio: boolean }
     | { type: 'subtitles'; vtt: string; label: string }
     | { type: 'audioSrc'; url: string }

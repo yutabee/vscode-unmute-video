@@ -5,6 +5,7 @@ import * as crypto from 'crypto';
 import { StreamServer } from './streamServer';
 import { AudioExtractionController } from './audioExtractionController';
 import { isNativeAudioFormat } from './mediaFormat';
+import { resolveSeekStep } from './config';
 import { clampPreferences } from './preferences';
 import type { Preferences } from './preferences';
 import { resumeKey } from './resume';
@@ -52,6 +53,7 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
         const stateKey = resumeKey(fsPath);
         const saved = this.context.workspaceState.get<number>(stateKey) ?? 0;
         const nativeAudio = isNativeAudioFormat(fsPath);
+        const seekStep = resolveSeekStep(vscode.workspace.getConfiguration('unmuteVideo').get('seekStep'));
         const mediaDir = vscode.Uri.joinPath(this.context.extensionUri, 'media');
         const webview = webviewPanel.webview;
 
@@ -73,7 +75,7 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
 
         const currentPreferences = (): Preferences => clampPreferences(this.context.globalState.get(PREFS_KEY));
 
-        const audio = nativeAudio ? null : new AudioExtractionController(this.server, fsPath, post, currentPreferences, saved);
+        const audio = nativeAudio ? null : new AudioExtractionController(this.server, fsPath, post, currentPreferences, saved, seekStep);
 
         const postSidecarSubtitles = (): void => {
             const subtitles = this.readSidecarSubtitles(fsPath);
@@ -91,6 +93,7 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
                 nativeAudio: initNativeAudio,
                 resumeTime: saved,
                 preferences: currentPreferences(),
+                seekStep,
             });
         };
 

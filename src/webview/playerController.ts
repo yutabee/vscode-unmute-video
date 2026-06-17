@@ -3,6 +3,7 @@ import type { Preferences } from "../preferences";
 import type { WebviewToHost } from "../protocol";
 import { RESUME_END_THRESHOLD_SEC, shouldResume } from "../resume";
 
+import { FRAME_STEP_SECONDS } from "../config";
 import { nextLoopTarget, type LoopState } from "./abLoop";
 import { els } from "./dom";
 import { renderLoopMarkers } from "./seekbar";
@@ -14,6 +15,7 @@ export class PlayerController {
   private audio: HTMLAudioElement | null = null;
   private subtitlesUrl: string | null = null;
   private videoCarriesAudio = false;
+  private seekStep = 10;
   // User's intended mute state, independent of which element is currently
   // audible -- so muting before the audio track attaches is preserved.
   private userMuted = false;
@@ -49,6 +51,14 @@ export class PlayerController {
   public setNativeAudio(on: boolean): void {
     this.videoCarriesAudio = on;
     this.applyAudible();
+  }
+
+  public setSeekStep(step: number): void {
+    this.seekStep = step;
+  }
+
+  public getSeekStep(): number {
+    return this.seekStep;
   }
 
   public applyPreferences(p: Preferences): void {
@@ -146,6 +156,11 @@ export class PlayerController {
 
   public nudge(delta: number): void {
     this.seekTo(els.video.currentTime + delta);
+  }
+
+  public frameStep(direction: number): void {
+    this.pause();
+    this.seekTo(els.video.currentTime + direction * FRAME_STEP_SECONDS);
   }
 
   public setLoopA(): void {
