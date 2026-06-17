@@ -27,6 +27,12 @@ export class PlayerController {
   private readonly PROGRESS_SAVE_DELTA_SEC = 5;
   private resumeTime = 0;
   private lastSavedTime = 0;
+  // Whether the user wants playback running, independent of whether an element
+  // is momentarily paused for buffering. Drives togglePlay and buffer recovery.
+  private userIntendsPlay = false;
+  // True while the video is held paused *because the audio track underran*. The
+  // pause is masked from the UI/progress so it reads as buffering, not a stop.
+  private waitingForAudio = false;
   private loop: LoopState = { a: null, b: null, whole: false, duration: 0 };
   // Whether a drag-scrub is in progress. Wired by the Seekbar via
   // setScrubProvider so the timeupdate handler can skip redrawing the bar
@@ -104,6 +110,7 @@ export class PlayerController {
   }
 
   public play(): void {
+    this.userIntendsPlay = true;
     els.video.play().catch(function () { /* ignore autoplay rejections */ });
     if (this.audio) {
       this.syncAudioToVideo();
@@ -112,9 +119,20 @@ export class PlayerController {
   }
 
   private pause(): void {
+    // Clearing waitingForAudio first means the video's 'pause' event (if one
+    // fires) is treated as a real stop, not a masked buffering hold.
+    const wasBufferHeld = this.waitingForAudio;
+    this.userIntendsPlay = false;
+    this.waitingForAudio = false;
     els.video.pause();
     if (this.audio) {
       this.audio.pause();
+    }
+    // If the video was already held paused for buffering, pausing it fires no
+    // 'pause' event, so reflect the stopped state in the UI here.
+    if (wasBufferHeld) {
+      els.player.classList.remove("is-playing");
+      els.player.classList.add("is-paused");
     }
   }
 
@@ -135,8 +153,34 @@ export class PlayerController {
     }
   }
 
+  // The audio track underran. Mirror how the video's `waiting` pauses audio:
+  // hold the video so it cannot run ahead of silent audio, but mask the pause
+  // (waitingForAudio) so it reads as buffering rather than a user stop.
+  private holdForAudioBuffering(): void {
+    if (this.audio && this.userIntendsPlay && this.videoIsPlaying()) {
+      this.waitingForAudio = true;
+      els.video.pause();
+    }
+  }
+
+  // The audio track recovered. Release a buffering hold and resume the pair the
+  // user still wants playing.
+  private resumeAfterAudioBuffering(): void {
+    if (!this.waitingForAudio) {
+      return;
+    }
+    this.waitingForAudio = false;
+    if (this.userIntendsPlay) {
+      this.syncAudioToVideo();
+      els.video.play().catch(function () {});
+      if (this.audio) {
+        this.audio.play().catch(function () {});
+      }
+    }
+  }
+
   public togglePlay(): void {
-    if (els.video.paused) {
+    if (!this.userIntendsPlay) {
       this.play();
       flashFeedback(true);
     } else {
@@ -312,6 +356,16 @@ export class PlayerController {
       showStatus("Audio playback error", "warning");
     });
 
+    // Symmetric buffer coordination: when the audio track underruns, hold the
+    // video so it cannot run ahead of silent audio; when audio is ready again,
+    // release the hold and resume both. Without this the video kept playing
+    // through audio dropouts and the two re-drifted on recovery.
+    this.audio.addEventListener("waiting", () => this.holdForAudioBuffering());
+    this.audio.addEventListener("stalled", () => this.holdForAudioBuffering());
+    this.audio.addEventListener("canplay", () => this.resumeAfterAudioBuffering());
+    this.audio.addEventListener("playing", () => this.resumeAfterAudioBuffering());
+    this.audio.addEventListener("seeked", () => this.resumeAfterAudioBuffering());
+
     clearStatus();
   }
 
@@ -479,6 +533,12 @@ export class PlayerController {
     });
 
     els.video.addEventListener("pause", () => {
+      // A buffering hold pauses the video element but is not a user stop: keep
+      // the UI showing playback and leave audio/progress untouched so it reads
+      // as buffering. resumeAfterAudioBuffering will resume the pair.
+      if (this.waitingForAudio) {
+        return;
+      }
       els.player.classList.remove("is-playing");
       els.player.classList.add("is-paused");
       if (this.audio && !this.audio.paused) {
