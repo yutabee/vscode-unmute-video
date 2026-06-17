@@ -34,6 +34,7 @@ window.addEventListener("message", function (event: MessageEvent<HostToWebview>)
     case "init":
       els.fileLabel.textContent = msg.name || "";
       els.fileLabel.title = msg.name || "";
+      controller.setResumeTime(msg.resumeTime || 0);
       controller.setNativeAudio(!!msg.nativeAudio);
       if (msg.audioPending) {
         showStatus("Extracting audio…", "loading");

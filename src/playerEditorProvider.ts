@@ -5,6 +5,7 @@ import * as crypto from 'crypto';
 import { StreamServer } from './streamServer';
 import { AudioExtractionController } from './audioExtractionController';
 import { isNativeAudioFormat } from './mediaFormat';
+import { resumeKey } from './resume';
 import { sidecarCandidates, srtToVtt } from './subtitles';
 import type { HostToWebview, WebviewToHost } from './protocol';
 
@@ -44,6 +45,8 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
         webviewPanel: vscode.WebviewPanel,
     ): Promise<void> {
         const fsPath = document.uri.fsPath;
+        const stateKey = resumeKey(fsPath);
+        const saved = this.context.workspaceState.get<number>(stateKey) ?? 0;
         const nativeAudio = isNativeAudioFormat(fsPath);
         const mediaDir = vscode.Uri.joinPath(this.context.extensionUri, 'media');
         const webview = webviewPanel.webview;
@@ -64,7 +67,7 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
             void webview.postMessage(message);
         };
 
-        const audio = nativeAudio ? null : new AudioExtractionController(this.server, fsPath, post);
+        const audio = nativeAudio ? null : new AudioExtractionController(this.server, fsPath, post, saved);
 
         const postSidecarSubtitles = (): void => {
             const subtitles = this.readSidecarSubtitles(fsPath);
@@ -80,6 +83,7 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
                 audioPending,
                 ffmpegMissing,
                 nativeAudio: initNativeAudio,
+                resumeTime: saved,
             });
         };
 
@@ -121,6 +125,13 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
                 case 'error': {
                     const text = typeof message.message === 'string' ? message.message : 'Unknown error';
                     vscode.window.showErrorMessage(`Unmute Video: ${text}`);
+                    break;
+                }
+
+                case 'progress': {
+                    if (Number.isFinite(message.time) && message.time > 0) {
+                        void this.context.workspaceState.update(stateKey, message.time);
+                    }
                     break;
                 }
 
