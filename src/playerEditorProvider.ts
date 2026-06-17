@@ -83,13 +83,13 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
                     handledReady = true;
                     if (nativeAudio) {
                         postInit(false, false, true);
-                        post({ type: 'videoSrc', url: videoUrl });
+                        post({ type: 'videoSrc', url: videoUrl, nativeAudio: true });
                         return;
                     }
 
                     const trusted = vscode.workspace.isTrusted;
                     postInit(trusted, false, false);
-                    post({ type: 'videoSrc', url: videoUrl });
+                    post({ type: 'videoSrc', url: videoUrl, nativeAudio: false });
 
                     if (trusted) {
                         audio?.start(false);

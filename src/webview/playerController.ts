@@ -39,7 +39,10 @@ export class PlayerController {
     this.applyAudible();
   }
 
-  public attachVideo(url: string): void {
+  public attachVideo(url: string, nativeAudio: boolean): void {
+    // Set audibility before src so a videoSrc arriving before (or without) init
+    // never flashes a webm muted: the message carries its own authoritative flag.
+    this.videoCarriesAudio = nativeAudio;
     els.video.src = url;
     els.video.preservesPitch = true;
     this.applyAudible();

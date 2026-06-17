@@ -46,7 +46,7 @@ window.addEventListener("message", function (event: MessageEvent<HostToWebview>)
 
     case "videoSrc":
       // Assign directly so the media element streams via HTTP Range.
-      controller.attachVideo(msg.url);
+      controller.attachVideo(msg.url, !!msg.nativeAudio);
       break;
 
     case "audioSrc":
