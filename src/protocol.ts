@@ -13,6 +13,7 @@
 export type HostToWebview =
     | { type: 'init'; name: string; audioPending: boolean; ffmpegMissing: boolean; nativeAudio: boolean; resumeTime: number }
     | { type: 'videoSrc'; url: string; nativeAudio: boolean }
+    | { type: 'subtitles'; vtt: string; label: string }
     | { type: 'audioSrc'; url: string }
     | { type: 'audioNone' }
     | { type: 'audioError' }
