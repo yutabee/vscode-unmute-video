@@ -34,6 +34,7 @@ window.addEventListener("message", function (event: MessageEvent<HostToWebview>)
     case "init":
       els.fileLabel.textContent = msg.name || "";
       els.fileLabel.title = msg.name || "";
+      controller.setNativeAudio(!!msg.nativeAudio);
       if (msg.audioPending) {
         showStatus("Extracting audio…", "loading");
       } else if (msg.ffmpegMissing) {
@@ -45,8 +46,7 @@ window.addEventListener("message", function (event: MessageEvent<HostToWebview>)
 
     case "videoSrc":
       // Assign directly so the media element streams via HTTP Range.
-      els.video.src = msg.url;
-      els.video.muted = true;
+      controller.attachVideo(msg.url);
       break;
 
     case "audioSrc":

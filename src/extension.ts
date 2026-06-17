@@ -50,7 +50,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             if (!target) {
                 const picked = await vscode.window.showOpenDialog({
                     canSelectMany: false,
-                    filters: { Video: ['mp4', 'mov', 'm4v'] },
+                    filters: { Video: ['mp4', 'mov', 'm4v', 'webm'] },
                 });
                 if (!picked || picked.length === 0) {
                     return;

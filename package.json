@@ -46,6 +46,7 @@
     "mp4",
     "mov",
     "m4v",
+    "webm",
     "audio",
     "preview",
     "ffmpeg",
@@ -85,6 +86,9 @@
           },
           {
             "filenamePattern": "**/*.m4v"
+          },
+          {
+            "filenamePattern": "**/*.webm"
           }
         ]
       }

@@ -7,6 +7,7 @@ import { clamp, formatTime, latestBufferedEnd } from "./util";
 export class PlayerController {
   /** The separate audible mp3 track, created when 'audioSrc' arrives. */
   private audio: HTMLAudioElement | null = null;
+  private videoCarriesAudio = false;
   // User's intended mute state, independent of which element is currently
   // audible -- so muting before the audio track attaches is preserved.
   private userMuted = false;
@@ -31,6 +32,17 @@ export class PlayerController {
 
   public get duration(): number {
     return els.video.duration;
+  }
+
+  public setNativeAudio(on: boolean): void {
+    this.videoCarriesAudio = on;
+    this.applyAudible();
+  }
+
+  public attachVideo(url: string): void {
+    els.video.src = url;
+    els.video.preservesPitch = true;
+    this.applyAudible();
   }
 
   public isPaused(): boolean {
@@ -127,6 +139,8 @@ export class PlayerController {
     el.volume = v;
     el.muted = this.userMuted;
     if (el !== els.video) {
+      els.video.muted = true;
+    } else if (!this.videoCarriesAudio) {
       els.video.muted = true;
     }
     this.updateMuteUi();
