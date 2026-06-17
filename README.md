@@ -1,14 +1,9 @@
 # Video Player (with Audio) — `vscode-unmute-video`
 
 [![CI](https://github.com/yutabee/vscode-unmute-video/actions/workflows/ci.yml/badge.svg)](https://github.com/yutabee/vscode-unmute-video/actions/workflows/ci.yml)
+[![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/yutabee.unmute-video)](https://marketplace.visualstudio.com/items?itemName=yutabee.unmute-video)
+[![Open VSX Version](https://img.shields.io/open-vsx/v/yutabee/unmute-video)](https://open-vsx.org/extension/yutabee/unmute-video)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.md)
-
-<!-- uncomment after the first Marketplace/Open VSX publish -->
-<!-- [![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/yutabee.unmute-video)](https://marketplace.visualstudio.com/items?itemName=yutabee.unmute-video) -->
-<!-- [![Visual Studio Marketplace Installs](https://img.shields.io/visual-studio-marketplace/i/yutabee.unmute-video)](https://marketplace.visualstudio.com/items?itemName=yutabee.unmute-video) -->
-<!-- [![Open VSX Version](https://img.shields.io/open-vsx/v/yutabee/unmute-video)](https://open-vsx.org/extension/yutabee/unmute-video) -->
-
-<!-- TODO: add a demo GIF at images/demo.gif and embed it here once recorded -->
 
 Play `.mp4` / `.mov` / `.m4v` videos **with sound** directly inside VS Code.
 
@@ -38,7 +33,7 @@ but stays silent. This extension works around that:
 - In VS Code, open the Extensions view and search for
   **Video Player (with Audio)**.
 - Or use Quick Open and run `ext install yutabee.unmute-video`.
-- For VSCodium/Cursor, install from Open VSX once it is published there.
+- For VSCodium, Cursor, and other [Open VSX](https://open-vsx.org/extension/yutabee/unmute-video) clients, install it from there.
 
 ## Usage
 
