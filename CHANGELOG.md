@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-06-17
+
+### Fixed
+
+- Fixed `.mp4` / `.mov` playback stalling and audio dropping out: the extracted
+  audio is now normalized to the video timeline so it no longer carries a
+  constant offset, and drift is corrected by gently nudging playback speed
+  instead of re-seeking the audio on every frame — which had turned a steady
+  offset into a continuous re-seek and a buffering feedback loop.
+- Audio and video now wait for each other through buffering: when the audio
+  track underruns, the video holds instead of running ahead into silence, and
+  both resume together once the audio is ready again.
+- Audio resume now waits until the track is actually buffered before starting,
+  so it no longer stalls and re-drifts immediately after a seek or recovery.
+- Real audio playback failures (decode / format / network) are now surfaced as a
+  status message instead of being silently swallowed, so the cause of silence is
+  visible.
+
 ## [0.2.0] - 2026-06-17
 
 ### Added
