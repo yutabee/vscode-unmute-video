@@ -100,6 +100,7 @@
     "lint": "eslint src",
     "watch": "tsc -w -p ./",
     "watch:webview": "esbuild src/webview/main.ts --bundle --format=iife --target=es2020 --outfile=media/player.js --watch",
+    "watch:webview:types": "tsc -p ./tsconfig.webview.json --watch",
     "compile:testutil": "tsc -p ./tsconfig.test.json",
     "pretest": "npm run compile && npm run compile:testutil",
     "test": "node --test",
