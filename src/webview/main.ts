@@ -34,6 +34,7 @@ window.addEventListener("message", function (event: MessageEvent<HostToWebview>)
     case "init":
       els.fileLabel.textContent = msg.name || "";
       els.fileLabel.title = msg.name || "";
+      controller.setResumeTime(msg.resumeTime || 0);
       controller.setNativeAudio(!!msg.nativeAudio);
       controller.applyPreferences(msg.preferences);
       if (msg.audioPending) {
@@ -48,6 +49,10 @@ window.addEventListener("message", function (event: MessageEvent<HostToWebview>)
     case "videoSrc":
       // Assign directly so the media element streams via HTTP Range.
       controller.attachVideo(msg.url, !!msg.nativeAudio);
+      break;
+
+    case "subtitles":
+      controller.attachSubtitles(msg.vtt, msg.label);
       break;
 
     case "audioSrc":
@@ -92,6 +97,9 @@ els.volSlider.addEventListener("input", function () {
 
 els.speedBtn.addEventListener("click", function () {
   controller.cycleSpeed();
+});
+els.subBtn.addEventListener("click", function () {
+  controller.toggleSubtitles();
 });
 
 // ----- Picture in Picture -----
@@ -157,6 +165,10 @@ document.addEventListener("keydown", function (evt) {
     case "m":
     case "M":
       controller.toggleMute();
+      break;
+    case "c":
+    case "C":
+      controller.toggleSubtitles();
       break;
     case "j":
     case "J":

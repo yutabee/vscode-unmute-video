@@ -2,6 +2,7 @@ export const els = {
   player: document.getElementById("player") as HTMLElement,
   stage: document.getElementById("stage") as HTMLElement,
   video: document.getElementById("video") as HTMLVideoElement,
+  track: document.getElementById("subTrack") as HTMLTrackElement,
   fileLabel: document.getElementById("fileLabel") as HTMLElement,
   flash: document.getElementById("flash") as HTMLElement,
   flashIcon: document.getElementById("flashIcon") as HTMLElement,
@@ -19,6 +20,7 @@ export const els = {
   timeCur: document.getElementById("timeCur") as HTMLElement,
   timeDur: document.getElementById("timeDur") as HTMLElement,
   speedBtn: document.getElementById("speedBtn") as HTMLButtonElement,
+  subBtn: document.getElementById("subBtn") as HTMLButtonElement,
   pipBtn: document.getElementById("pipBtn") as HTMLButtonElement,
   fsBtn: document.getElementById("fsBtn") as HTMLButtonElement,
 

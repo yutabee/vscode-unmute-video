@@ -13,8 +13,9 @@ import type { Preferences } from './preferences';
 
 /** Messages the extension host sends to the webview. */
 export type HostToWebview =
-    | { type: 'init'; name: string; audioPending: boolean; ffmpegMissing: boolean; nativeAudio: boolean; preferences: Preferences }
+    | { type: 'init'; name: string; audioPending: boolean; ffmpegMissing: boolean; nativeAudio: boolean; resumeTime: number; preferences: Preferences }
     | { type: 'videoSrc'; url: string; nativeAudio: boolean }
+    | { type: 'subtitles'; vtt: string; label: string }
     | { type: 'audioSrc'; url: string }
     | { type: 'audioNone' }
     | { type: 'audioError' }
@@ -26,6 +27,7 @@ export type WebviewAction = 'openExternal' | 'copyPath';
 /** Messages the webview sends to the extension host. */
 export type WebviewToHost =
     | { type: 'ready' }
+    | { type: 'progress'; time: number }
     | { type: 'error'; message: string }
     | { type: 'action'; name: WebviewAction }
     | { type: 'savePreferences'; preferences: Preferences };
