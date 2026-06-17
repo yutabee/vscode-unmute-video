@@ -2,7 +2,7 @@
   "name": "unmute-video",
   "displayName": "Video Player (with Audio) — MP4/MOV",
   "description": "Play MP4 / MOV / M4V videos inside VS Code with sound. Audio is extracted via ffmpeg and synced to the muted video, working around the missing AAC codec in the VS Code webview.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "yutabee",
   "license": "MIT",
   "icon": "images/icon.png",
