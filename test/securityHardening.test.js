@@ -61,6 +61,39 @@ test('resolveFfmpegOverride: a sibling dir that shares a name prefix is NOT trea
     assert.equal(audio.resolveFfmpegOverride(sibling, [root]), sibling);
 });
 
+test('resolveFfmpegOverride: a case-only alias is caught on case-insensitive filesystems', (t) => {
+    if (process.platform !== 'win32' && process.platform !== 'darwin') {
+        t.skip('case-insensitive comparison only applies on macOS/Windows');
+        return;
+    }
+    const root = process.platform === 'win32' ? 'C:\\Users\\Me\\Repo' : '/Users/Me/Repo';
+    const inside = process.platform === 'win32'
+        ? 'c:\\users\\me\\repo\\bin\\ffmpeg.exe'
+        : '/users/me/repo/bin/ffmpeg';
+    assert.equal(audio.resolveFfmpegOverride(inside, [root]), undefined);
+});
+
+test('resolveFfmpegOverride: a symlinked alias of a workspace path is caught (realpath)', (t) => {
+    if (process.platform === 'win32') {
+        t.skip('directory symlinks need privileges on Windows');
+        return;
+    }
+    const base = fs.mkdtempSync(path.join(os.tmpdir(), 'unmute-symlink-'));
+    try {
+        const realRoot = path.join(base, 'real-root');
+        fs.mkdirSync(path.join(realRoot, 'bin'), { recursive: true });
+        fs.writeFileSync(path.join(realRoot, 'bin', 'ffmpeg'), '');
+        const linkRoot = path.join(base, 'link-root');
+        fs.symlinkSync(realRoot, linkRoot);
+        // The override reaches the binary through the symlinked root; realpath
+        // must canonicalize it back inside realRoot and reject it.
+        const viaLink = path.join(linkRoot, 'bin', 'ffmpeg');
+        assert.equal(audio.resolveFfmpegOverride(viaLink, [realRoot]), undefined);
+    } finally {
+        fs.rmSync(base, { recursive: true, force: true });
+    }
+});
+
 // ---------------------------------------------------------------------------
 // pruneAudioCache
 // ---------------------------------------------------------------------------

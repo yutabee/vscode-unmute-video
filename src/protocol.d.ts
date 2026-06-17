@@ -16,7 +16,8 @@ type HostToWebview =
     | { type: 'videoSrc'; url: string }
     | { type: 'audioSrc'; url: string }
     | { type: 'audioNone' }
-    | { type: 'audioError' };
+    | { type: 'audioError' }
+    | { type: 'audioUntrusted' };
 
 /** Actions the webview can ask the host to perform. */
 type WebviewAction = 'openExternal' | 'copyPath';

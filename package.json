@@ -13,6 +13,9 @@
   "bugs": {
     "url": "https://github.com/yutabee/vscode-unmute-video/issues"
   },
+  "homepage": "https://github.com/yutabee/vscode-unmute-video#readme",
+  "qna": "https://github.com/yutabee/vscode-unmute-video/issues",
+  "pricing": "Free",
   "galleryBanner": {
     "color": "#241b3a",
     "theme": "dark"
@@ -20,15 +23,34 @@
   "engines": {
     "vscode": "^1.90.0"
   },
+  "extensionKind": [
+    "workspace"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "Audio extraction runs ffmpeg on the opened file; in untrusted workspaces the video plays muted until you trust the workspace."
+    },
+    "virtualWorkspaces": {
+      "supported": false,
+      "description": "Playback needs a real on-disk file path and a local ffmpeg."
+    }
+  },
   "categories": [
+    "Visualization",
     "Other"
   ],
   "keywords": [
     "video",
     "video player",
     "mp4",
+    "mov",
+    "m4v",
     "audio",
-    "preview"
+    "preview",
+    "ffmpeg",
+    "player",
+    "media"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -38,7 +60,8 @@
         "unmuteVideo.ffmpegPath": {
           "type": "string",
           "default": "",
-          "description": "Absolute path to an ffmpeg binary. Leave empty to auto-detect."
+          "scope": "machine",
+          "markdownDescription": "Absolute path to an [ffmpeg](https://ffmpeg.org/download.html) binary. Leave empty to auto-detect ffmpeg."
         }
       }
     },

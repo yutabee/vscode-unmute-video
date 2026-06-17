@@ -1,12 +1,19 @@
 import * as vscode from 'vscode';
 import { StreamServer } from './streamServer';
 import { PlayerEditorProvider } from './playerEditorProvider';
+import { pruneAudioCache } from './audio';
 
 /**
  * Extension entry point. Starts the loopback streaming server, registers the
  * custom video editor, and wires up the `unmuteVideo.open` command.
  */
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
+    try {
+        pruneAudioCache();
+    } catch {
+        /* ignore */
+    }
+
     // One streaming server shared by all open editors.
     const server = new StreamServer();
     context.subscriptions.push({
