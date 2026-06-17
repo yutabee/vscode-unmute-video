@@ -40,6 +40,83 @@ export function resetFfmpegCache(): void {
 }
 
 /**
+ * Decide whether a user-provided ffmpeg override path may be used.
+ * Returns the trimmed override only when it is a non-empty ABSOLUTE path that
+ * does NOT resolve inside any of the given workspace roots; otherwise undefined.
+ * Belt-and-suspenders on top of the machine-scoped setting.
+ */
+export function resolveFfmpegOverride(
+    override: string | undefined,
+    workspaceRoots: string[],
+): string | undefined {
+    const trimmed = typeof override === 'string' ? override.trim() : '';
+    if (trimmed === '' || !path.isAbsolute(trimmed)) {
+        return undefined;
+    }
+
+    const resolvedOverride = normalizeResolvedPath(trimmed);
+    for (const root of workspaceRoots) {
+        const trimmedRoot = root.trim();
+        if (trimmedRoot === '') {
+            continue;
+        }
+        const resolvedRoot = normalizeResolvedPath(trimmedRoot);
+        if (resolvedOverride === resolvedRoot || resolvedOverride.startsWith(ensureTrailingSeparator(resolvedRoot))) {
+            return undefined;
+        }
+    }
+
+    return trimmed;
+}
+
+/**
+ * Best-effort: delete cached extracted-audio files older than maxAgeMs from the
+ * private cache dir. Never throws (swallows all fs errors). Synchronous.
+ */
+export function pruneAudioCache(maxAgeMs = 7 * 24 * 60 * 60 * 1000): void {
+    try {
+        const cutoff = Date.now() - maxAgeMs;
+        for (const entry of fs.readdirSync(CACHE_DIR)) {
+            if (!/^unmute-audio-.*\.mp3$/.test(entry)) {
+                continue;
+            }
+            const file = path.join(CACHE_DIR, entry);
+            try {
+                if (fs.statSync(file).mtimeMs < cutoff) {
+                    fs.unlinkSync(file);
+                }
+            } catch {
+                /* ignore */
+            }
+        }
+    } catch {
+        /* ignore */
+    }
+}
+
+function normalizeResolvedPath(value: string): string {
+    let resolved = path.resolve(value);
+    try {
+        // Canonicalize symlinks (and, on Windows, short/namespaced aliases like
+        // 8.3 names or \\?\ prefixes) so the boundary check cannot be fooled by an
+        // alias that names a workspace path without sharing its textual prefix.
+        resolved = fs.realpathSync.native(resolved);
+    } catch {
+        // The path may not exist yet; fall back to the lexically-normalized form.
+        resolved = path.normalize(resolved);
+    }
+    // macOS and Windows default to case-insensitive filesystems, so compare
+    // case-insensitively there to avoid a case-only bypass of the boundary check.
+    return process.platform === 'win32' || process.platform === 'darwin'
+        ? resolved.toLowerCase()
+        : resolved;
+}
+
+function ensureTrailingSeparator(value: string): string {
+    return value.endsWith(path.sep) ? value : `${value}${path.sep}`;
+}
+
+/**
  * Locate a working ffmpeg binary. Tries common absolute paths and then a bare
  * `ffmpeg` from PATH; the first that responds to `-version` wins. The result
  * (including "not found") is cached.

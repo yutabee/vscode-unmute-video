@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
 import { StreamServer } from './streamServer';
-import { findFfmpeg, extractAudio } from './audio';
+import { findFfmpeg, extractAudio, resolveFfmpegOverride } from './audio';
 // HostToWebview / WebviewToHost are global ambient types (src/protocol.d.ts).
 
 /**
@@ -54,15 +54,71 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
         // this guards against leaking a token or posting to a dead webview.
         let disposed = false;
         let handledReady = false;
-
-        const ffmpegOverride = vscode.workspace
-            .getConfiguration('unmuteVideo')
-            .get<string>('ffmpegPath');
-        const ffmpegPromise = findFfmpeg(ffmpegOverride);
+        let trustListener: vscode.Disposable | undefined;
+        let audioExtractionStarted = false;
 
         // Outgoing messages are checked against the shared protocol type.
         const post = (message: HostToWebview): void => {
             void webview.postMessage(message);
+        };
+
+        const postInit = (audioPending: boolean, ffmpegMissing: boolean): void => {
+            post({
+                type: 'init',
+                name: path.basename(fsPath),
+                audioPending,
+                ffmpegMissing,
+            });
+        };
+
+        const hasNoAudioFlag = (err: unknown): boolean =>
+            typeof err === 'object' && err !== null && (err as { noAudio?: unknown }).noAudio === true;
+
+        const startAudioExtraction = (showPendingStatus: boolean): void => {
+            if (audioExtractionStarted) {
+                return;
+            }
+            audioExtractionStarted = true;
+
+            if (showPendingStatus) {
+                postInit(true, false);
+            }
+
+            void (async () => {
+                const config = vscode.workspace.getConfiguration('unmuteVideo');
+                const workspaceRoots = (vscode.workspace.workspaceFolders ?? []).map((folder) => folder.uri.fsPath);
+                const ffmpegOverride = resolveFfmpegOverride(config.get<string>('ffmpegPath'), workspaceRoots);
+                const ffmpeg = await findFfmpeg(ffmpegOverride);
+                if (disposed) {
+                    return;
+                }
+
+                if (ffmpeg === null) {
+                    postInit(false, true);
+                    return;
+                }
+
+                try {
+                    const mp3Path = await extractAudio(ffmpeg, fsPath);
+                    const token = this.server.register(mp3Path);
+                    if (disposed) {
+                        // Editor closed before extraction finished:
+                        // release the token instead of leaking it.
+                        this.server.unregister(token);
+                        return;
+                    }
+                    audioToken = token;
+                    post({ type: 'audioSrc', url: this.server.urlFor(token) });
+                } catch (err) {
+                    if (!disposed) {
+                        post(hasNoAudioFlag(err) ? { type: 'audioNone' } : { type: 'audioError' });
+                    }
+                }
+            })().catch(() => {
+                if (!disposed) {
+                    post({ type: 'audioError' });
+                }
+            });
         };
 
         const messageListener = webview.onDidReceiveMessage(async (message: WebviewToHost) => {
@@ -76,38 +132,19 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
                         return;
                     }
                     handledReady = true;
-                    const ffmpeg = await ffmpegPromise;
-                    if (disposed) {
-                        return;
-                    }
-                    post({
-                        type: 'init',
-                        name: path.basename(fsPath),
-                        audioPending: ffmpeg !== null,
-                        ffmpegMissing: ffmpeg === null,
-                    });
+                    const trusted = vscode.workspace.isTrusted;
+                    postInit(trusted, false);
                     post({ type: 'videoSrc', url: videoUrl });
 
-                    if (ffmpeg !== null) {
-                        // Extract (or reuse) the MP3 in the background; never block
-                        // the video from starting.
-                        extractAudio(ffmpeg, fsPath)
-                            .then((mp3Path) => {
-                                const token = this.server.register(mp3Path);
-                                if (disposed) {
-                                    // Editor closed before extraction finished:
-                                    // release the token instead of leaking it.
-                                    this.server.unregister(token);
-                                    return;
-                                }
-                                audioToken = token;
-                                post({ type: 'audioSrc', url: this.server.urlFor(token) });
-                            })
-                            .catch((err) => {
-                                if (!disposed) {
-                                    post(err && err.noAudio === true ? { type: 'audioNone' } : { type: 'audioError' });
-                                }
-                            });
+                    if (trusted) {
+                        startAudioExtraction(false);
+                    } else {
+                        post({ type: 'audioUntrusted' });
+                        trustListener = vscode.workspace.onDidGrantWorkspaceTrust(() => {
+                            if (!disposed) {
+                                startAudioExtraction(true);
+                            }
+                        });
                     }
                     break;
                 }
@@ -136,6 +173,9 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
         webviewPanel.onDidDispose(() => {
             disposed = true;
             messageListener.dispose();
+            if (trustListener !== undefined) {
+                trustListener.dispose();
+            }
             this.server.unregister(videoToken);
             if (audioToken !== undefined) {
                 this.server.unregister(audioToken);

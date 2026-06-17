@@ -298,6 +298,10 @@ declare function acquireVsCodeApi(): {
       case "audioError":
         showStatus("Audio extraction failed", "warning");
         break;
+
+      case "audioUntrusted":
+        showStatus("Audio is disabled in untrusted workspaces. Trust this workspace to enable sound.", "warning");
+        break;
     }
   });
 
