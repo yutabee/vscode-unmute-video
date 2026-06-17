@@ -5,7 +5,7 @@ import { RESUME_END_THRESHOLD_SEC, shouldResume } from "../resume";
 
 import { FRAME_STEP_SECONDS } from "../config";
 import { nextLoopTarget, type LoopState } from "./abLoop";
-import { driftAction } from "./sync";
+import { canResumeAudio, DEFAULT_DRIFT_TUNING, driftAction, isBenignPlayError } from "./sync";
 import { els } from "./dom";
 import { renderLoopMarkers } from "./seekbar";
 import { clearStatus, flashFeedback, showStatus } from "./status";
@@ -104,9 +104,22 @@ export class PlayerController {
   }
 
   private syncAudioToVideo(): void {
-    if (this.audio && Math.abs(this.audio.currentTime - els.video.currentTime) > 0.05) {
+    if (this.audio && Math.abs(this.audio.currentTime - els.video.currentTime) > DEFAULT_DRIFT_TUNING.soft) {
       this.audio.currentTime = els.video.currentTime;
     }
+  }
+
+  private tryPlayAudio(): void {
+    if (!this.audio) {
+      return;
+    }
+    this.audio.play().catch((err: unknown) => {
+      const name = err instanceof DOMException ? err.name : "";
+      if (isBenignPlayError(name)) {
+        return;
+      }
+      showStatus("Audio playback error", "warning");
+    });
   }
 
   public play(): void {
@@ -114,7 +127,7 @@ export class PlayerController {
     els.video.play().catch(function () { /* ignore autoplay rejections */ });
     if (this.audio) {
       this.syncAudioToVideo();
-      this.audio.play().catch(function () {});
+      this.tryPlayAudio();
     }
   }
 
@@ -149,7 +162,9 @@ export class PlayerController {
   private resumeAudioWithVideo(): void {
     if (this.audio && this.videoIsPlaying()) {
       this.syncAudioToVideo();
-      this.audio.play().catch(function () {});
+      if (canResumeAudio(this.audio.readyState, this.audio.seeking)) {
+        this.tryPlayAudio();
+      }
     }
   }
 
@@ -173,9 +188,19 @@ export class PlayerController {
     if (this.userIntendsPlay) {
       this.syncAudioToVideo();
       els.video.play().catch(function () {});
-      if (this.audio) {
-        this.audio.play().catch(function () {});
+      if (this.audio && canResumeAudio(this.audio.readyState, this.audio.seeking)) {
+        this.tryPlayAudio();
       }
+    }
+  }
+
+  // An audio readiness event fired. Resume whichever path was waiting on it:
+  // a masked buffering hold, or a play deferred while video kept running.
+  private onAudioReady(): void {
+    if (this.waitingForAudio) {
+      this.resumeAfterAudioBuffering();
+    } else {
+      this.resumeAudioWithVideo();
     }
   }
 
@@ -349,7 +374,7 @@ export class PlayerController {
     // Mirror current playback state onto the freshly attached track.
     this.syncAudioToVideo();
     if (!els.video.paused) {
-      this.audio.play().catch(function () {});
+      this.tryPlayAudio();
     }
 
     this.audio.addEventListener("error", function () {
@@ -362,9 +387,9 @@ export class PlayerController {
     // through audio dropouts and the two re-drifted on recovery.
     this.audio.addEventListener("waiting", () => this.holdForAudioBuffering());
     this.audio.addEventListener("stalled", () => this.holdForAudioBuffering());
-    this.audio.addEventListener("canplay", () => this.resumeAfterAudioBuffering());
-    this.audio.addEventListener("playing", () => this.resumeAfterAudioBuffering());
-    this.audio.addEventListener("seeked", () => this.resumeAfterAudioBuffering());
+    this.audio.addEventListener("canplay", () => this.onAudioReady());
+    this.audio.addEventListener("playing", () => this.onAudioReady());
+    this.audio.addEventListener("seeked", () => this.onAudioReady());
 
     clearStatus();
   }

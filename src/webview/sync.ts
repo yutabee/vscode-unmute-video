@@ -69,3 +69,32 @@ export function driftAction(
   const playbackRate = Math.max(0.0625, baseRate + direction * tuning.rateNudge);
   return { kind: "rate", playbackRate };
 }
+
+/**
+ * Minimum HTMLMediaElement.readyState before starting audio is worth it.
+ * HAVE_FUTURE_DATA (3): enough data to advance at least one frame from the
+ * current position. Below this, play() tends to stall or reject and then
+ * re-drift on recovery.
+ */
+export const AUDIO_READY_THRESHOLD = 3;
+
+/**
+ * Whether the audio element is ready enough to start without immediately
+ * stalling. Used to gate resume so we wait for `canplay`/`seeked` instead of
+ * calling play() on an unbuffered/seeking element.
+ */
+export function canResumeAudio(readyState: number, seeking: boolean): boolean {
+  return readyState >= AUDIO_READY_THRESHOLD && !seeking;
+}
+
+/**
+ * play() rejections that are expected and must NOT be surfaced as errors:
+ * - AbortError: a pause()/load()/seek interrupted the pending play (benign).
+ * - NotAllowedError: autoplay blocked before a user gesture; the next gesture
+ *   retries, so it is not a failure to report.
+ * Anything else (decode/format/network) is a real failure worth showing so the
+ * cause of silence is no longer hidden behind an empty catch.
+ */
+export function isBenignPlayError(errorName: string): boolean {
+  return errorName === "AbortError" || errorName === "NotAllowedError";
+}
