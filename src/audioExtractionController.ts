@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { StreamServer } from './streamServer';
 import { findFfmpeg, extractAudio, resolveFfmpegOverride } from './audio';
+import type { Preferences } from './preferences';
 import type { HostToWebview } from './protocol';
 
 /**
@@ -19,6 +20,7 @@ export class AudioExtractionController {
         private readonly server: StreamServer,
         private readonly fsPath: string,
         private readonly post: (message: HostToWebview) => void,
+        private readonly getPreferences: () => Preferences,
     ) {}
 
     /**
@@ -88,6 +90,7 @@ export class AudioExtractionController {
             audioPending,
             ffmpegMissing,
             nativeAudio: false,
+            preferences: this.getPreferences(),
         });
     }
 }

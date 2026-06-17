@@ -30,6 +30,7 @@ const originalAudio = {
 const { AudioExtractionController } = require('../out/audioExtractionController.js');
 
 const FS_PATH = '/tmp/unmute/clip.mp4';
+const PREFERENCES = { volume: 0.4, muted: true, playbackRate: 1.25 };
 
 function makeFakeServer() {
     const calls = { register: [], unregister: [], urlFor: [] };
@@ -63,7 +64,7 @@ function makePostSink() {
 function makeHarness() {
     const server = makeFakeServer();
     const sink = makePostSink();
-    const ctl = new AudioExtractionController(server, FS_PATH, sink.post);
+    const ctl = new AudioExtractionController(server, FS_PATH, sink.post, () => PREFERENCES);
     return { server, sink, ctl };
 }
 
@@ -131,7 +132,7 @@ test('ffmpeg missing posts init with ffmpegMissing and does not extract', async 
     await sink.waitForPost((m) => m.type === 'init');
 
     assert.deepEqual(sink.posts, [
-        { type: 'init', name: 'clip.mp4', audioPending: false, ffmpegMissing: true, nativeAudio: false },
+        { type: 'init', name: 'clip.mp4', audioPending: false, ffmpegMissing: true, nativeAudio: false, preferences: PREFERENCES },
     ]);
     assert.deepEqual(findCalls, [undefined]);
     assert.equal(extractCalls, 0);
@@ -152,9 +153,10 @@ test('showPendingStatus posts pending init before later audioSrc', async () => {
         audioPending: true,
         ffmpegMissing: false,
         nativeAudio: false,
+        preferences: PREFERENCES,
     });
     assert.deepEqual(sink.posts, [
-        { type: 'init', name: 'clip.mp4', audioPending: true, ffmpegMissing: false, nativeAudio: false },
+        { type: 'init', name: 'clip.mp4', audioPending: true, ffmpegMissing: false, nativeAudio: false, preferences: PREFERENCES },
         { type: 'audioSrc', url: 'http://127.0.0.1:0/tok-1' },
     ]);
     assert.equal(findCalls.length, 1);

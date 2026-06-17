@@ -5,7 +5,11 @@ import * as crypto from 'crypto';
 import { StreamServer } from './streamServer';
 import { AudioExtractionController } from './audioExtractionController';
 import { isNativeAudioFormat } from './mediaFormat';
+import { clampPreferences } from './preferences';
+import type { Preferences } from './preferences';
 import type { HostToWebview, WebviewToHost } from './protocol';
+
+const PREFS_KEY = 'unmuteVideo.preferences';
 
 /**
  * Custom editor that plays .mp4/.mov/.m4v files WITH sound inside VS Code.
@@ -58,7 +62,9 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
             void webview.postMessage(message);
         };
 
-        const audio = nativeAudio ? null : new AudioExtractionController(this.server, fsPath, post);
+        const currentPreferences = (): Preferences => clampPreferences(this.context.globalState.get(PREFS_KEY));
+
+        const audio = nativeAudio ? null : new AudioExtractionController(this.server, fsPath, post, currentPreferences);
 
         const postInit = (audioPending: boolean, ffmpegMissing: boolean, initNativeAudio: boolean): void => {
             post({
@@ -67,6 +73,7 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
                 audioPending,
                 ffmpegMissing,
                 nativeAudio: initNativeAudio,
+                preferences: currentPreferences(),
             });
         };
 
@@ -116,6 +123,11 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
                         void vscode.env.clipboard.writeText(fsPath);
                         void vscode.window.showInformationMessage('Unmute Video: file path copied to clipboard.');
                     }
+                    break;
+                }
+
+                case 'savePreferences': {
+                    void this.context.globalState.update(PREFS_KEY, clampPreferences(message.preferences));
                     break;
                 }
 

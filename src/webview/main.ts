@@ -35,6 +35,7 @@ window.addEventListener("message", function (event: MessageEvent<HostToWebview>)
       els.fileLabel.textContent = msg.name || "";
       els.fileLabel.title = msg.name || "";
       controller.setNativeAudio(!!msg.nativeAudio);
+      controller.applyPreferences(msg.preferences);
       if (msg.audioPending) {
         showStatus("Extracting audio…", "loading");
       } else if (msg.ffmpegMissing) {

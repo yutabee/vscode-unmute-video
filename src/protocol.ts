@@ -9,9 +9,11 @@
  * `out/protocol.js` on the host side).
  */
 
+import type { Preferences } from './preferences';
+
 /** Messages the extension host sends to the webview. */
 export type HostToWebview =
-    | { type: 'init'; name: string; audioPending: boolean; ffmpegMissing: boolean; nativeAudio: boolean }
+    | { type: 'init'; name: string; audioPending: boolean; ffmpegMissing: boolean; nativeAudio: boolean; preferences: Preferences }
     | { type: 'videoSrc'; url: string; nativeAudio: boolean }
     | { type: 'audioSrc'; url: string }
     | { type: 'audioNone' }
@@ -25,4 +27,5 @@ export type WebviewAction = 'openExternal' | 'copyPath';
 export type WebviewToHost =
     | { type: 'ready' }
     | { type: 'error'; message: string }
-    | { type: 'action'; name: WebviewAction };
+    | { type: 'action'; name: WebviewAction }
+    | { type: 'savePreferences'; preferences: Preferences };
