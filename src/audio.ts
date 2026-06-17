@@ -212,6 +212,12 @@ async function extractAudioToCache(ffmpeg: string, input: string, key: string, o
             '-nostdin',
             '-i', input,
             '-vn',
+            // Normalize the audio to the video timeline: reset the first sample
+            // to PTS 0. MP4/MOV audio commonly carries a start-time offset
+            // (edit-list priming / encoder delay), and without this the
+            // extracted mp3 is shifted a constant amount from the video clock --
+            // the offset source that drove the drift-correction feedback loop.
+            '-af', 'aresample=async=1:first_pts=0',
             '-c:a', 'libmp3lame',
             '-b:a', '192k',
             '-f', 'mp3',
