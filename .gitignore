@@ -9,3 +9,6 @@ out/
 
 # Build output: media/player.js is bundled by esbuild from src/webview/main.ts
 media/player.js
+
+# Playwright MCP output (screenshots / preview harness used for UI verification)
+.playwright-mcp/
