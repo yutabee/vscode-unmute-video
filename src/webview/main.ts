@@ -83,10 +83,10 @@ els.stage.addEventListener("click", function () {
 });
 
 els.back10Btn.addEventListener("click", function () {
-  controller.nudge(-10);
+  controller.nudge(-controller.getSeekStep());
 });
 els.fwd10Btn.addEventListener("click", function () {
-  controller.nudge(10);
+  controller.nudge(controller.getSeekStep());
 });
 
 els.loopBtn.addEventListener("click", function () {

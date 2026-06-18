@@ -61,10 +61,32 @@ export class PlayerController {
 
   public setSeekStep(step: number): void {
     this.seekStep = step;
+    if (Number.isFinite(step)) {
+      this.updateSeekStepLabels(step);
+    }
   }
 
   public getSeekStep(): number {
     return this.seekStep;
+  }
+
+  // Keep the back/forward buttons honest about the configured step: their face
+  // badge, tooltip, and accessible name all derive from the live seekStep
+  // instead of a baked-in "10".
+  private updateSeekStepLabels(step: number): void {
+    const label = String(step);
+    const backSub = els.back10Btn.querySelector(".btn-sub");
+    const fwdSub = els.fwd10Btn.querySelector(".btn-sub");
+    if (backSub) {
+      backSub.textContent = label;
+    }
+    if (fwdSub) {
+      fwdSub.textContent = label;
+    }
+    els.back10Btn.title = "Back " + label + "s (J)";
+    els.fwd10Btn.title = "Forward " + label + "s (L)";
+    els.back10Btn.setAttribute("aria-label", "Rewind " + label + " seconds");
+    els.fwd10Btn.setAttribute("aria-label", "Forward " + label + " seconds");
   }
 
   public applyPreferences(p: Preferences): void {
