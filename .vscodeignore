@@ -1,11 +1,13 @@
 .vscode/**
 .github/**
+.playwright-mcp/**
 src/**
 test/**
 out/webview/**
 docs/**
 node_modules/**
 images/icon.svg
+images/demo.gif
 **/tsconfig*.json
 **/*.map
 **/*.ts

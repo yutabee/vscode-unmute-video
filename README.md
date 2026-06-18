@@ -1,29 +1,36 @@
-# Video Player (with Audio) — `vscode-unmute-video`
+# Video Player (with Audio)
 
 [![CI](https://github.com/yutabee/vscode-unmute-video/actions/workflows/ci.yml/badge.svg)](https://github.com/yutabee/vscode-unmute-video/actions/workflows/ci.yml)
 [![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/yutabee.unmute-video)](https://marketplace.visualstudio.com/items?itemName=yutabee.unmute-video)
 [![Open VSX Version](https://img.shields.io/open-vsx/v/yutabee/unmute-video)](https://open-vsx.org/extension/yutabee/unmute-video)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.md)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/yutabee/vscode-unmute-video/blob/main/LICENSE.md)
 
-Play `.mp4` / `.mov` / `.m4v` / `.webm` videos **with sound** directly inside VS Code.
+Play MP4 / MOV / M4V / WebM videos **with sound** directly inside VS Code — audio that actually plays, and stays in sync.
 
-## Why this exists
+![Video Player (with Audio) playing a clip inside VS Code](https://raw.githubusercontent.com/yutabee/vscode-unmute-video/main/images/demo.gif)
 
-VS Code's webview runs on the Electron/Chromium build that ships **without the
-AAC codec** (patent licensing). So a normal `<video>` element shows the picture
-but stays silent. This extension works around that:
+## Features
 
-1. The video stream is served from a tiny loopback HTTP server with HTTP Range
-   support, so even large files play without being loaded into memory.
-2. `ffmpeg` extracts the audio track to MP3 in the background.
-3. The webview plays a **muted `<video>`** alongside a hidden `<audio>` element
-   and keeps the two in sync (play/pause/seek/speed/volume).
+- 🔊 Plays **MP4 / MOV / M4V / WebM with real sound** — not the silent preview the built-in editor gives you.
+- 🎯 **Audio stays in sync** with the video through continuous drift correction, even on long clips.
+- 🚀 **Streams large files** over HTTP Range — the video is never loaded fully into memory.
+- ⌨️ **Full keyboard controls**, adjustable playback speed (0.5×–2×), and picture-in-picture.
+- 🔒 **Safe by default** in untrusted workspaces — stays muted until you trust the workspace.
+- ♿ **Accessible** — keyboard navigation and screen-reader announcements.
+
+## Supported formats
+
+| Format | Audio | Needs ffmpeg |
+| --- | --- | --- |
+| `.mp4` / `.mov` / `.m4v` | ✅ extracted via ffmpeg | Yes |
+| `.webm` | ✅ native | No |
 
 ## Requirements
 
+Needs [`ffmpeg`](https://ffmpeg.org/) on your `PATH` for MP4/MOV/M4V audio; WebM needs nothing. Without ffmpeg the video still plays, just silently.
+
 - VS Code `^1.90.0`
-- [`ffmpeg`](https://ffmpeg.org/) on your `PATH` (for audio).
-  Without it the video still plays, but silent.
+- `ffmpeg` (for `.mp4` / `.mov` / `.m4v` audio):
   - macOS: `brew install ffmpeg`
   - Ubuntu/Debian: `sudo apt install ffmpeg`
   - Windows: install ffmpeg and ensure `ffmpeg.exe` is reachable
@@ -64,6 +71,18 @@ The extension registers as the default editor for `.mp4`, `.mov`, `.m4v`, and
   }
 }
 ```
+
+## How it works
+
+VS Code's webview runs on the Electron/Chromium build that ships **without the
+AAC codec** (patent licensing). So a normal `<video>` element shows the picture
+but stays silent. This extension works around that:
+
+1. The video stream is served from a tiny loopback HTTP server with HTTP Range
+   support, so even large files play without being loaded into memory.
+2. `ffmpeg` extracts the audio track to MP3 in the background.
+3. The webview plays a **muted `<video>`** alongside a hidden `<audio>` element
+   and keeps the two in sync (play/pause/seek/speed/volume).
 
 ## Limitations
 
