@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Marketplace listing: expanded `keywords` (now covering "sound", "no sound",
+  "aac", "mute", and common format terms), added WebM to the display name and
+  description, and led the description with the in-sync-audio value proposition.
+- README restructured as a listing page: a demo GIF and a benefit/feature list
+  now sit above the fold, with a supported-formats table; the codec deep-dive
+  moved down to a "How it works" section.
+
+### Packaging
+
+- Excluded scratch (`.playwright-mcp/`) and the README demo GIF from the
+  published `.vsix` (the GIF is served from the repo via a raw URL instead).
+
 ## [0.2.2] - 2026-06-18
 
 ### Added
