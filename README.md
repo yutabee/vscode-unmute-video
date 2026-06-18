@@ -38,7 +38,8 @@ Needs [`ffmpeg`](https://ffmpeg.org/) on your `PATH` for MP4/MOV/M4V audio; WebM
 ## Install
 
 - In VS Code, open the Extensions view and search for
-  **Video Player (with Audio)**.
+  **Video Player (with Audio)**, or install it from the
+  [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=yutabee.unmute-video).
 - Or use Quick Open and run `ext install yutabee.unmute-video`.
 - For VSCodium, Cursor, and other [Open VSX](https://open-vsx.org/extension/yutabee/unmute-video) clients, install it from there.
 
