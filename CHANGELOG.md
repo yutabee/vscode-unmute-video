@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-06-18
+
+### Added
+
+- The "ffmpeg not found" and "workspace not trusted" notices are now actionable:
+  a button opens the relevant Settings entry or the Workspace Trust editor.
+- The video stage shows a buffering spinner while playback stalls and an error
+  overlay when a video fails to play.
+
+### Changed
+
+- The player follows the active VS Code color theme, including High Contrast, and
+  the control bar wraps onto multiple rows in narrow editors instead of clipping.
+- Improved screen-reader support: the seek bar announces a live timestamp and
+  transient status messages are exposed to assistive technology.
+
+### Fixed
+
+- Fixed the play/pause button occasionally drawing two overlapping icons.
+- The buffering spinner no longer lingers over a paused or finished video, where
+  it could look like the player had frozen.
+
 ## [0.2.1] - 2026-06-17
 
 ### Fixed
@@ -86,6 +108,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The `unmuteVideo.ffmpegPath` setting is machine-scoped, so a workspace cannot
   redirect the extension to an arbitrary executable.
 
-[Unreleased]: https://github.com/yutabee/vscode-unmute-video/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/yutabee/vscode-unmute-video/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/yutabee/vscode-unmute-video/compare/v0.2.1...v0.2.2
+[0.2.1]: https://github.com/yutabee/vscode-unmute-video/compare/v0.2.0...v0.2.1
+[0.2.0]: https://github.com/yutabee/vscode-unmute-video/compare/v0.1.2...v0.2.0
+[0.1.2]: https://github.com/yutabee/vscode-unmute-video/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/yutabee/vscode-unmute-video/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/yutabee/vscode-unmute-video/releases/tag/v0.1.0
