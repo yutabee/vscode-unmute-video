@@ -42,7 +42,8 @@ but stays silent. This extension works around that:
 - Or run **"Open with Video Player (with Audio)"** from the Command Palette.
 
 Controls: click the stage or use `space`/`k` to play-pause, `j`/`l` (or ←/→)
-to seek ±10s, `m` to mute, the volume slider to adjust audio, `f` for
+to seek by the configured step (±10s by default — change it with
+`unmuteVideo.seekStep`), `m` to mute, the volume slider to adjust audio, `f` for
 fullscreen, and `p` for picture-in-picture when the host supports it. The speed
 button cycles 0.5×–2×. The action buttons copy the file path or open the file in
 an external player.

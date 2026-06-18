@@ -25,10 +25,17 @@
           <path d="M8 5v14l11-7z" fill="currentColor"></path>
         </svg>
       </div>
+
+      <!-- Buffering / loading / error overlay -->
+      <div class="stage-overlay" id="stageOverlay" aria-hidden="true">
+        <span class="stage-spinner"></span>
+        <span class="stage-error" id="stageError"></span>
+      </div>
     </div>
 
     <!-- Seek / progress bar -->
-    <div class="seek" id="seek" role="slider" aria-label="Seek" tabindex="0">
+    <div class="seek" id="seek" role="slider" aria-label="Seek" tabindex="0"
+         aria-valuemin="0" aria-valuemax="0" aria-valuenow="0" aria-valuetext="0:00 of 0:00">
       <div class="seek-track">
         <div class="seek-buffered" id="seekBuffered"></div>
         <div class="seek-played" id="seekPlayed"></div>
@@ -40,38 +47,38 @@
 
     <!-- Controls bar -->
     <div class="controls" id="controls">
-      <button class="btn" id="playBtn" type="button" title="Play / Pause (Space)">
-        <svg class="ic ic-play" viewBox="0 0 24 24" width="20" height="20"><path d="M8 5v14l11-7z" fill="currentColor"></path></svg>
-        <svg class="ic ic-pause" viewBox="0 0 24 24" width="20" height="20"><path d="M6 5h4v14H6zm8 0h4v14h-4z" fill="currentColor"></path></svg>
+      <button class="btn" id="playBtn" type="button" title="Play / Pause (Space)" aria-label="Play/Pause" aria-pressed="false">
+        <svg class="ic ic-play" aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M8 5v14l11-7z" fill="currentColor"></path></svg>
+        <svg class="ic ic-pause" aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M6 5h4v14H6zm8 0h4v14h-4z" fill="currentColor"></path></svg>
       </button>
 
       <button class="btn" id="back10Btn" type="button" title="Back 10s (J)">
-        <svg viewBox="0 0 24 24" width="20" height="20">
+        <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20">
           <path d="M11 7V4L6 8l5 4V9c3.3 0 6 2.7 6 6s-2.7 6-6 6-6-2.7-6-6H3c0 4.4 3.6 8 8 8s8-3.6 8-8-3.6-8-8-8z" fill="currentColor"></path>
         </svg>
         <span class="btn-sub">10</span>
       </button>
 
       <button class="btn" id="fwd10Btn" type="button" title="Forward 10s (L)">
-        <svg viewBox="0 0 24 24" width="20" height="20">
+        <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20">
           <path d="M13 7V4l5 4-5 4V9c-3.3 0-6 2.7-6 6s2.7 6 6 6 6-2.7 6-6h2c0 4.4-3.6 8-8 8s-8-3.6-8-8 3.6-8 8-8z" fill="currentColor"></path>
         </svg>
         <span class="btn-sub">10</span>
       </button>
 
-      <button class="btn" id="loopBtn" type="button" title="Loop whole clip (\)">
-        <svg viewBox="0 0 24 24" width="20" height="20">
+      <button class="btn" id="loopBtn" type="button" title="Loop whole clip (\)" aria-label="Loop entire clip" aria-pressed="false">
+        <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20">
           <path d="M17 1l4 4-4 4V6H7a4 4 0 000 8h1v2H7A6 6 0 017 4h10V1zm0 7h-1v2h1a4 4 0 010 8H7v-3l-4 4 4 4v-3h10a6 6 0 000-12z" fill="currentColor"></path>
         </svg>
       </button>
 
-      <button class="btn btn-loop-point" id="setABtn" type="button" title="Set loop A ([)">A</button>
-      <button class="btn btn-loop-point" id="setBBtn" type="button" title="Set loop B (])">B</button>
+      <button class="btn btn-loop-point" id="setABtn" type="button" title="Set loop A ([)" aria-label="Set loop start (A)">A</button>
+      <button class="btn btn-loop-point" id="setBBtn" type="button" title="Set loop B (])" aria-label="Set loop end (B)">B</button>
 
       <div class="vol">
-        <button class="btn" id="muteBtn" type="button" title="Mute (M)">
-          <svg class="ic ic-vol" viewBox="0 0 24 24" width="20" height="20"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 00-2.5-4v8a4.5 4.5 0 002.5-4zM14 3.2v2.1c2.9.9 5 3.5 5 6.7s-2.1 5.8-5 6.7v2.1c4-.9 7-4.5 7-8.8s-3-7.9-7-8.8z" fill="currentColor"></path></svg>
-          <svg class="ic ic-muted" viewBox="0 0 24 24" width="20" height="20"><path d="M3 9v6h4l5 5V4L7 9H3zm18.3-1.3l-1.4-1.4L17 9.2 14.1 6.3l-1.4 1.4L15.6 10.6 12.7 13.5l1.4 1.4L17 12l2.9 2.9 1.4-1.4L18.4 10.6z" fill="currentColor"></path></svg>
+        <button class="btn" id="muteBtn" type="button" title="Mute (M)" aria-label="Mute" aria-pressed="false">
+          <svg class="ic ic-vol" aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 00-2.5-4v8a4.5 4.5 0 002.5-4zM14 3.2v2.1c2.9.9 5 3.5 5 6.7s-2.1 5.8-5 6.7v2.1c4-.9 7-4.5 7-8.8s-3-7.9-7-8.8z" fill="currentColor"></path></svg>
+          <svg class="ic ic-muted" aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M3 9v6h4l5 5V4L7 9H3zm18.3-1.3l-1.4-1.4L17 9.2 14.1 6.3l-1.4 1.4L15.6 10.6 12.7 13.5l1.4 1.4L17 12l2.9 2.9 1.4-1.4L18.4 10.6z" fill="currentColor"></path></svg>
         </button>
         <input class="vol-slider" id="volSlider" type="range" min="0" max="1" step="0.01" value="1" aria-label="Volume">
       </div>
@@ -84,34 +91,35 @@
 
       <div class="spacer"></div>
 
-      <button class="btn btn-cc" id="subBtn" type="button" title="Subtitles (C)" aria-pressed="false" hidden>CC</button>
+      <button class="btn btn-cc" id="subBtn" type="button" title="Subtitles (C)" aria-label="Subtitles" aria-pressed="false" hidden>CC</button>
 
       <button class="btn btn-speed" id="speedBtn" type="button" title="Playback speed">1x</button>
 
-      <button class="btn" id="pipBtn" type="button" title="Picture in Picture (P)">
-        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M19 7h-8v6h8V7zm2-4H3a2 2 0 00-2 2v14a2 2 0 002 2h18a2 2 0 002-2V5a2 2 0 00-2-2zm0 16.01H3V4.98h18v14.03z" fill="currentColor"></path></svg>
+      <button class="btn" id="pipBtn" type="button" title="Picture in Picture (P)" aria-label="Picture in picture">
+        <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M19 7h-8v6h8V7zm2-4H3a2 2 0 00-2 2v14a2 2 0 002 2h18a2 2 0 002-2V5a2 2 0 00-2-2zm0 16.01H3V4.98h18v14.03z" fill="currentColor"></path></svg>
       </button>
 
-      <button class="btn" id="fsBtn" type="button" title="Fullscreen (F)">
-        <svg class="ic ic-fs" viewBox="0 0 24 24" width="20" height="20"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" fill="currentColor"></path></svg>
-        <svg class="ic ic-fs-exit" viewBox="0 0 24 24" width="20" height="20"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z" fill="currentColor"></path></svg>
+      <button class="btn" id="fsBtn" type="button" title="Fullscreen (F)" aria-label="Fullscreen" aria-pressed="false">
+        <svg class="ic ic-fs" aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" fill="currentColor"></path></svg>
+        <svg class="ic ic-fs-exit" aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z" fill="currentColor"></path></svg>
       </button>
     </div>
 
     <!-- Status bar -->
-    <div class="status" id="status" hidden>
-      <span class="spinner" id="statusSpinner" hidden></span>
+    <div class="status" id="status" role="status" aria-live="polite" hidden>
+      <span class="spinner" id="statusSpinner" aria-hidden="true" hidden></span>
       <span class="status-text" id="statusText"></span>
+      <button class="status-action" id="statusAction" type="button" hidden></button>
     </div>
 
     <!-- Action row -->
     <div class="actions" id="actions">
       <button class="action-btn" id="openExternalBtn" type="button">
-        <svg viewBox="0 0 24 24" width="16" height="16"><path d="M14 3v2h3.6l-9.8 9.8 1.4 1.4L19 6.4V10h2V3h-7zM5 5h5V3H3v18h18v-7h-2v5H5V5z" fill="currentColor"></path></svg>
+        <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M14 3v2h3.6l-9.8 9.8 1.4 1.4L19 6.4V10h2V3h-7zM5 5h5V3H3v18h18v-7h-2v5H5V5z" fill="currentColor"></path></svg>
         Open in external player
       </button>
       <button class="action-btn" id="copyPathBtn" type="button">
-        <svg viewBox="0 0 24 24" width="16" height="16"><path d="M16 1H4a2 2 0 00-2 2v14h2V3h12V1zm3 4H8a2 2 0 00-2 2v14a2 2 0 002 2h11a2 2 0 002-2V7a2 2 0 00-2-2zm0 16H8V7h11v14z" fill="currentColor"></path></svg>
+        <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path d="M16 1H4a2 2 0 00-2 2v14h2V3h12V1zm3 4H8a2 2 0 00-2 2v14a2 2 0 002 2h11a2 2 0 002-2V7a2 2 0 00-2-2zm0 16H8V7h11v14z" fill="currentColor"></path></svg>
         Copy file path
       </button>
     </div>

@@ -5,6 +5,7 @@ import { RESUME_END_THRESHOLD_SEC, shouldResume } from "../resume";
 
 import { FRAME_STEP_SECONDS } from "../config";
 import { nextLoopTarget, type LoopState } from "./abLoop";
+import { BufferingOverlay } from "./bufferingOverlay";
 import { canResumeAudio, DEFAULT_DRIFT_TUNING, driftAction, isBenignPlayError } from "./sync";
 import { els } from "./dom";
 import { renderLoopMarkers } from "./seekbar";
@@ -33,6 +34,17 @@ export class PlayerController {
   // True while the video is held paused *because the audio track underran*. The
   // pause is masked from the UI/progress so it reads as buffering, not a stop.
   private waitingForAudio = false;
+  // Stage buffering spinner with a debounce so micro-stalls don't flash it. The
+  // debounce/cancel logic lives in a pure BufferingOverlay so it is unit-tested
+  // with a fake clock; this only wires it to the CSS class toggle.
+  private readonly buffering = new BufferingOverlay(
+    () => els.player.classList.add("is-buffering"),
+    () => els.player.classList.remove("is-buffering"),
+    {
+      setTimeout: (handler, ms) => window.setTimeout(handler, ms),
+      clearTimeout: (id) => window.clearTimeout(id),
+    },
+  );
   private loop: LoopState = { a: null, b: null, whole: false, duration: 0 };
   // Whether a drag-scrub is in progress. Wired by the Seekbar via
   // setScrubProvider so the timeupdate handler can skip redrawing the bar
@@ -61,10 +73,32 @@ export class PlayerController {
 
   public setSeekStep(step: number): void {
     this.seekStep = step;
+    if (Number.isFinite(step)) {
+      this.updateSeekStepLabels(step);
+    }
   }
 
   public getSeekStep(): number {
     return this.seekStep;
+  }
+
+  // Keep the back/forward buttons honest about the configured step: their face
+  // badge, tooltip, and accessible name all derive from the live seekStep
+  // instead of a baked-in "10".
+  private updateSeekStepLabels(step: number): void {
+    const label = String(step);
+    const backSub = els.back10Btn.querySelector(".btn-sub");
+    const fwdSub = els.fwd10Btn.querySelector(".btn-sub");
+    if (backSub) {
+      backSub.textContent = label;
+    }
+    if (fwdSub) {
+      fwdSub.textContent = label;
+    }
+    els.back10Btn.title = "Back " + label + "s (J)";
+    els.fwd10Btn.title = "Forward " + label + "s (L)";
+    els.back10Btn.setAttribute("aria-label", "Rewind " + label + " seconds");
+    els.fwd10Btn.setAttribute("aria-label", "Forward " + label + " seconds");
   }
 
   public applyPreferences(p: Preferences): void {
@@ -141,11 +175,16 @@ export class PlayerController {
     if (this.audio) {
       this.audio.pause();
     }
+    // A user stop must cancel any pending/active buffering spinner; otherwise the
+    // debounced spinner can fire onto (or linger over) a stopped frame and read
+    // as a freeze.
+    this.hideBuffering();
     // If the video was already held paused for buffering, pausing it fires no
     // 'pause' event, so reflect the stopped state in the UI here.
     if (wasBufferHeld) {
       els.player.classList.remove("is-playing");
       els.player.classList.add("is-paused");
+      els.playBtn.setAttribute("aria-pressed", "false");
     }
   }
 
@@ -168,6 +207,25 @@ export class PlayerController {
     }
   }
 
+  // Show the stage spinner after a short delay so brief stalls don't flicker it.
+  private showBuffering(): void {
+    this.buffering.show();
+  }
+
+  private hideBuffering(): void {
+    this.buffering.hide();
+  }
+
+  private showStageError(message: string): void {
+    this.hideBuffering();
+    els.stageError.textContent = message;
+    els.player.classList.add("is-stage-error");
+  }
+
+  private clearStageError(): void {
+    els.player.classList.remove("is-stage-error");
+  }
+
   // The audio track underran. Mirror how the video's `waiting` pauses audio:
   // hold the video so it cannot run ahead of silent audio, but mask the pause
   // (waitingForAudio) so it reads as buffering rather than a user stop.
@@ -175,6 +233,7 @@ export class PlayerController {
     if (this.audio && this.userIntendsPlay && this.videoIsPlaying()) {
       this.waitingForAudio = true;
       els.video.pause();
+      this.showBuffering();
     }
   }
 
@@ -187,11 +246,25 @@ export class PlayerController {
     this.waitingForAudio = false;
     if (this.userIntendsPlay) {
       this.syncAudioToVideo();
-      els.video.play().catch(function () {});
+      // Keep the spinner up until the video actually resumes (its own 'playing'
+      // handler hides it) so we don't flash "playing, no spinner, silent". If
+      // play() rejects there is no 'playing' event, so drop to a stopped state
+      // here rather than spinning over a frame that will never advance.
+      els.video.play().catch(() => this.dropToPausedFromBuffering());
       if (this.audio && canResumeAudio(this.audio.readyState, this.audio.seeking)) {
         this.tryPlayAudio();
       }
     }
+  }
+
+  // A buffering resume failed to start the video. Reflect a real stop so the UI
+  // doesn't keep a spinner over a frame that will never advance.
+  private dropToPausedFromBuffering(): void {
+    this.userIntendsPlay = false;
+    this.hideBuffering();
+    els.player.classList.remove("is-playing");
+    els.player.classList.add("is-paused");
+    els.playBtn.setAttribute("aria-pressed", "false");
   }
 
   // An audio readiness event fired. Resume whichever path was waiting on it:
@@ -270,6 +343,7 @@ export class PlayerController {
       this.audio.playbackRate = rate;
     }
     els.speedBtn.textContent = rate + "x";
+    els.speedBtn.setAttribute("aria-label", "Playback speed " + rate + "x");
   }
 
   public cycleSpeed(): void {
@@ -347,7 +421,9 @@ export class PlayerController {
 
   private updateMuteUi(): void {
     const v = parseFloat(els.volSlider.value);
-    els.player.classList.toggle("is-muted", this.userMuted || v === 0);
+    const muted = this.userMuted || v === 0;
+    els.player.classList.toggle("is-muted", muted);
+    els.muteBtn.setAttribute("aria-pressed", muted ? "true" : "false");
   }
 
   public attachAudio(url: string): void {
@@ -480,6 +556,19 @@ export class PlayerController {
       els.seekHandle.style.left = "0%";
     }
     this.renderBuffered();
+    this.updateSeekAria();
+  }
+
+  // Mirror the seek bar's position into ARIA so screen readers announce a
+  // human-readable timestamp; the visual width/handle alone are silent.
+  private updateSeekAria(): void {
+    const dur = els.video.duration;
+    if (!isFinite(dur) || dur <= 0) {
+      return;
+    }
+    els.seek.setAttribute("aria-valuemax", String(Math.floor(dur)));
+    els.seek.setAttribute("aria-valuenow", String(Math.floor(els.video.currentTime)));
+    els.seek.setAttribute("aria-valuetext", formatTime(els.video.currentTime) + " of " + formatTime(dur));
   }
 
   private renderBuffered(): void {
@@ -503,6 +592,7 @@ export class PlayerController {
     renderLoopMarkers(this.loop.a, this.loop.b, this.loop.duration);
     els.player.classList.toggle("is-looping", this.loop.whole);
     els.loopBtn.classList.toggle("is-active", this.loop.whole);
+    els.loopBtn.setAttribute("aria-pressed", this.loop.whole ? "true" : "false");
     els.setABtn.classList.toggle("is-active", this.loop.a !== null);
     els.setBBtn.classList.toggle("is-active", this.loop.b !== null);
   }
@@ -528,11 +618,13 @@ export class PlayerController {
       if (shouldResume(this.resumeTime, els.video.duration, RESUME_END_THRESHOLD_SEC)) {
         this.seekTo(this.resumeTime);
       }
+      this.hideBuffering();
     });
 
     els.video.addEventListener("durationchange", () => {
       els.timeDur.textContent = formatTime(els.video.duration);
       this.refreshLoopUi();
+      this.updateSeekAria();
     });
 
     els.video.addEventListener("timeupdate", () => {
@@ -554,6 +646,7 @@ export class PlayerController {
     els.video.addEventListener("play", () => {
       els.player.classList.add("is-playing");
       els.player.classList.remove("is-paused");
+      els.playBtn.setAttribute("aria-pressed", "true");
       this.resumeAudioWithVideo();
     });
 
@@ -564,8 +657,12 @@ export class PlayerController {
       if (this.waitingForAudio) {
         return;
       }
+      // A genuine stop ends any buffering spinner so it can't linger over the
+      // paused frame.
+      this.hideBuffering();
       els.player.classList.remove("is-playing");
       els.player.classList.add("is-paused");
+      els.playBtn.setAttribute("aria-pressed", "false");
       if (this.audio && !this.audio.paused) {
         this.audio.pause();
       }
@@ -580,16 +677,28 @@ export class PlayerController {
 
     els.video.addEventListener("seeked", () => {
       this.resumeAudioWithVideo();
+      this.hideBuffering();
     });
 
     els.video.addEventListener("waiting", () => {
       this.pauseAudioForBuffering();
+      this.showBuffering();
     });
     els.video.addEventListener("stalled", () => {
       this.pauseAudioForBuffering();
+      this.showBuffering();
     });
     els.video.addEventListener("playing", () => {
       this.resumeAudioWithVideo();
+      this.hideBuffering();
+      this.clearStageError();
+    });
+    els.video.addEventListener("canplay", () => {
+      this.hideBuffering();
+      this.clearStageError();
+    });
+    els.video.addEventListener("loadstart", () => {
+      this.showBuffering();
     });
 
     els.video.addEventListener("ended", () => {
@@ -600,6 +709,8 @@ export class PlayerController {
       // restarts from the end instead of being read as a pause.
       this.userIntendsPlay = false;
       this.waitingForAudio = false;
+      // Reaching the end clears any spinner so it doesn't sit over the last frame.
+      this.hideBuffering();
       if (this.audio) {
         this.audio.pause();
       }
@@ -617,6 +728,7 @@ export class PlayerController {
       }
       this.postMessage({ type: "error", message: detail });
       showStatus(detail, "warning");
+      this.showStageError(detail);
     });
   }
 }

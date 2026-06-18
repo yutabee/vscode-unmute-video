@@ -6,6 +6,7 @@ export const els = {
   fileLabel: document.getElementById("fileLabel") as HTMLElement,
   flash: document.getElementById("flash") as HTMLElement,
   flashIcon: document.getElementById("flashIcon") as HTMLElement,
+  stageError: document.getElementById("stageError") as HTMLElement,
 
   seek: document.getElementById("seek") as HTMLElement,
   seekBuffered: document.getElementById("seekBuffered") as HTMLElement,
@@ -32,6 +33,7 @@ export const els = {
   status: document.getElementById("status") as HTMLElement,
   statusSpinner: document.getElementById("statusSpinner") as HTMLElement,
   statusText: document.getElementById("statusText") as HTMLElement,
+  statusAction: document.getElementById("statusAction") as HTMLButtonElement,
 
   openExternalBtn: document.getElementById("openExternalBtn") as HTMLButtonElement,
   copyPathBtn: document.getElementById("copyPathBtn") as HTMLButtonElement,
