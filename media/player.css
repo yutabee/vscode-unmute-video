@@ -209,8 +209,10 @@ html, body {
 /* ---------- Controls bar ---------- */
 .controls {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 4px;
+  row-gap: 6px;
   padding: 6px 8px;
   background: var(--panel);
   border-radius: var(--radius);
