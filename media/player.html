@@ -25,6 +25,12 @@
           <path d="M8 5v14l11-7z" fill="currentColor"></path>
         </svg>
       </div>
+
+      <!-- Buffering / loading / error overlay -->
+      <div class="stage-overlay" id="stageOverlay" aria-hidden="true">
+        <span class="stage-spinner"></span>
+        <span class="stage-error" id="stageError"></span>
+      </div>
     </div>
 
     <!-- Seek / progress bar -->

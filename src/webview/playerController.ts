@@ -33,6 +33,8 @@ export class PlayerController {
   // True while the video is held paused *because the audio track underran*. The
   // pause is masked from the UI/progress so it reads as buffering, not a stop.
   private waitingForAudio = false;
+  // Debounce timer for the stage buffering spinner, so micro-stalls don't flash it.
+  private bufferingTimer: number | undefined;
   private loop: LoopState = { a: null, b: null, whole: false, duration: 0 };
   // Whether a drag-scrub is in progress. Wired by the Seekbar via
   // setScrubProvider so the timeupdate handler can skip redrawing the bar
@@ -191,6 +193,35 @@ export class PlayerController {
     }
   }
 
+  // Show the stage spinner after a short delay so brief stalls don't flicker it.
+  private showBuffering(): void {
+    if (this.bufferingTimer !== undefined) {
+      return;
+    }
+    this.bufferingTimer = window.setTimeout(() => {
+      this.bufferingTimer = undefined;
+      els.player.classList.add("is-buffering");
+    }, 250);
+  }
+
+  private hideBuffering(): void {
+    if (this.bufferingTimer !== undefined) {
+      window.clearTimeout(this.bufferingTimer);
+      this.bufferingTimer = undefined;
+    }
+    els.player.classList.remove("is-buffering");
+  }
+
+  private showStageError(message: string): void {
+    this.hideBuffering();
+    els.stageError.textContent = message;
+    els.player.classList.add("is-stage-error");
+  }
+
+  private clearStageError(): void {
+    els.player.classList.remove("is-stage-error");
+  }
+
   // The audio track underran. Mirror how the video's `waiting` pauses audio:
   // hold the video so it cannot run ahead of silent audio, but mask the pause
   // (waitingForAudio) so it reads as buffering rather than a user stop.
@@ -198,6 +229,7 @@ export class PlayerController {
     if (this.audio && this.userIntendsPlay && this.videoIsPlaying()) {
       this.waitingForAudio = true;
       els.video.pause();
+      this.showBuffering();
     }
   }
 
@@ -209,6 +241,7 @@ export class PlayerController {
     }
     this.waitingForAudio = false;
     if (this.userIntendsPlay) {
+      this.hideBuffering();
       this.syncAudioToVideo();
       els.video.play().catch(function () {});
       if (this.audio && canResumeAudio(this.audio.readyState, this.audio.seeking)) {
@@ -568,6 +601,7 @@ export class PlayerController {
       if (shouldResume(this.resumeTime, els.video.duration, RESUME_END_THRESHOLD_SEC)) {
         this.seekTo(this.resumeTime);
       }
+      this.hideBuffering();
     });
 
     els.video.addEventListener("durationchange", () => {
@@ -623,16 +657,28 @@ export class PlayerController {
 
     els.video.addEventListener("seeked", () => {
       this.resumeAudioWithVideo();
+      this.hideBuffering();
     });
 
     els.video.addEventListener("waiting", () => {
       this.pauseAudioForBuffering();
+      this.showBuffering();
     });
     els.video.addEventListener("stalled", () => {
       this.pauseAudioForBuffering();
+      this.showBuffering();
     });
     els.video.addEventListener("playing", () => {
       this.resumeAudioWithVideo();
+      this.hideBuffering();
+      this.clearStageError();
+    });
+    els.video.addEventListener("canplay", () => {
+      this.hideBuffering();
+      this.clearStageError();
+    });
+    els.video.addEventListener("loadstart", () => {
+      this.showBuffering();
     });
 
     els.video.addEventListener("ended", () => {
@@ -660,6 +706,7 @@ export class PlayerController {
       }
       this.postMessage({ type: "error", message: detail });
       showStatus(detail, "warning");
+      this.showStageError(detail);
     });
   }
 }

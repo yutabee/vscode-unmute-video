@@ -6,6 +6,7 @@ export const els = {
   fileLabel: document.getElementById("fileLabel") as HTMLElement,
   flash: document.getElementById("flash") as HTMLElement,
   flashIcon: document.getElementById("flashIcon") as HTMLElement,
+  stageError: document.getElementById("stageError") as HTMLElement,
 
   seek: document.getElementById("seek") as HTMLElement,
   seekBuffered: document.getElementById("seekBuffered") as HTMLElement,
