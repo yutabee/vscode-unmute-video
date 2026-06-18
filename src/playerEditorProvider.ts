@@ -146,16 +146,35 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
                 }
 
                 case 'action': {
-                    if (message.name === 'openExternal') {
-                        void vscode.env.openExternal(document.uri);
-                    } else if (message.name === 'copyPath') {
-                        void vscode.env.clipboard.writeText(fsPath);
-                        void vscode.window.showInformationMessage('Unmute Video: file path copied to clipboard.');
-                    } else if (message.name === 'trustWorkspace') {
-                        // Open the Workspace Trust editor; the user decides — we never grant trust.
-                        void vscode.commands.executeCommand('workbench.trust.manage');
-                    } else if (message.name === 'openFfmpegSettings') {
-                        void vscode.commands.executeCommand('workbench.action.openSettings', 'unmuteVideo.ffmpegPath');
+                    // Explicit allowlist: every branch is a known action. An
+                    // unknown name is logged rather than silently ignored so
+                    // boundary drift (webview/host protocol mismatch) is observable.
+                    switch (message.name) {
+                        case 'openExternal':
+                            void vscode.env.openExternal(document.uri);
+                            break;
+                        case 'copyPath':
+                            void vscode.env.clipboard.writeText(fsPath);
+                            void vscode.window.showInformationMessage('Unmute Video: file path copied to clipboard.');
+                            break;
+                        case 'trustWorkspace':
+                            // Open the Workspace Trust editor; the user decides — we
+                            // never grant trust. Skip when already trusted so the
+                            // command can't be replayed pointlessly.
+                            if (!vscode.workspace.isTrusted) {
+                                void vscode.commands.executeCommand('workbench.trust.manage').then(undefined, () => {
+                                    void vscode.window.showWarningMessage('Unmute Video: could not open Workspace Trust settings.');
+                                });
+                            }
+                            break;
+                        case 'openFfmpegSettings':
+                            void vscode.commands.executeCommand('workbench.action.openSettings', 'unmuteVideo.ffmpegPath').then(undefined, () => {
+                                void vscode.window.showWarningMessage('Unmute Video: could not open settings.');
+                            });
+                            break;
+                        default:
+                            console.warn(`Unmute Video: ignoring unknown webview action "${String(message.name)}"`);
+                            break;
                     }
                     break;
                 }
