@@ -142,7 +142,9 @@ function toggleFullscreen(): void {
 }
 els.fsBtn.addEventListener("click", toggleFullscreen);
 document.addEventListener("fullscreenchange", function () {
-  els.player.classList.toggle("is-fullscreen", !!document.fullscreenElement);
+  const isFs = !!document.fullscreenElement;
+  els.player.classList.toggle("is-fullscreen", isFs);
+  els.fsBtn.setAttribute("aria-pressed", isFs ? "true" : "false");
 });
 
 // ----- Action row -----

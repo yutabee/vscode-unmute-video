@@ -1,8 +1,11 @@
 import { els } from "./dom";
 
 export function showStatus(text: string, variant: "warning" | "loading" | "info"): void {
-  els.statusText.textContent = text;
+  // Expose the live region and set its urgency BEFORE writing the text, so the
+  // text change lands in an already-visible status region and gets announced
+  // (warnings assertively, progress/info politely).
   els.status.hidden = false;
+  els.status.setAttribute("aria-live", variant === "warning" ? "assertive" : "polite");
   if (variant === "warning") {
     els.status.classList.add("is-warning");
     els.statusSpinner.hidden = true;
@@ -13,6 +16,7 @@ export function showStatus(text: string, variant: "warning" | "loading" | "info"
     els.status.classList.remove("is-warning");
     els.statusSpinner.hidden = true;
   }
+  els.statusText.textContent = text;
 }
 
 export function clearStatus(): void {

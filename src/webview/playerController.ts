@@ -146,6 +146,7 @@ export class PlayerController {
     if (wasBufferHeld) {
       els.player.classList.remove("is-playing");
       els.player.classList.add("is-paused");
+      els.playBtn.setAttribute("aria-pressed", "false");
     }
   }
 
@@ -270,6 +271,7 @@ export class PlayerController {
       this.audio.playbackRate = rate;
     }
     els.speedBtn.textContent = rate + "x";
+    els.speedBtn.setAttribute("aria-label", "Playback speed " + rate + "x");
   }
 
   public cycleSpeed(): void {
@@ -347,7 +349,9 @@ export class PlayerController {
 
   private updateMuteUi(): void {
     const v = parseFloat(els.volSlider.value);
-    els.player.classList.toggle("is-muted", this.userMuted || v === 0);
+    const muted = this.userMuted || v === 0;
+    els.player.classList.toggle("is-muted", muted);
+    els.muteBtn.setAttribute("aria-pressed", muted ? "true" : "false");
   }
 
   public attachAudio(url: string): void {
@@ -480,6 +484,19 @@ export class PlayerController {
       els.seekHandle.style.left = "0%";
     }
     this.renderBuffered();
+    this.updateSeekAria();
+  }
+
+  // Mirror the seek bar's position into ARIA so screen readers announce a
+  // human-readable timestamp; the visual width/handle alone are silent.
+  private updateSeekAria(): void {
+    const dur = els.video.duration;
+    if (!isFinite(dur) || dur <= 0) {
+      return;
+    }
+    els.seek.setAttribute("aria-valuemax", String(Math.floor(dur)));
+    els.seek.setAttribute("aria-valuenow", String(Math.floor(els.video.currentTime)));
+    els.seek.setAttribute("aria-valuetext", formatTime(els.video.currentTime) + " of " + formatTime(dur));
   }
 
   private renderBuffered(): void {
@@ -503,6 +520,7 @@ export class PlayerController {
     renderLoopMarkers(this.loop.a, this.loop.b, this.loop.duration);
     els.player.classList.toggle("is-looping", this.loop.whole);
     els.loopBtn.classList.toggle("is-active", this.loop.whole);
+    els.loopBtn.setAttribute("aria-pressed", this.loop.whole ? "true" : "false");
     els.setABtn.classList.toggle("is-active", this.loop.a !== null);
     els.setBBtn.classList.toggle("is-active", this.loop.b !== null);
   }
@@ -533,6 +551,7 @@ export class PlayerController {
     els.video.addEventListener("durationchange", () => {
       els.timeDur.textContent = formatTime(els.video.duration);
       this.refreshLoopUi();
+      this.updateSeekAria();
     });
 
     els.video.addEventListener("timeupdate", () => {
@@ -554,6 +573,7 @@ export class PlayerController {
     els.video.addEventListener("play", () => {
       els.player.classList.add("is-playing");
       els.player.classList.remove("is-paused");
+      els.playBtn.setAttribute("aria-pressed", "true");
       this.resumeAudioWithVideo();
     });
 
@@ -566,6 +586,7 @@ export class PlayerController {
       }
       els.player.classList.remove("is-playing");
       els.player.classList.add("is-paused");
+      els.playBtn.setAttribute("aria-pressed", "false");
       if (this.audio && !this.audio.paused) {
         this.audio.pause();
       }

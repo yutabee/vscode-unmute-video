@@ -54,6 +54,26 @@ export class Seekbar {
     els.seek.addEventListener("touchend", (evt) => {
       this.endScrub(evt);
     });
+
+    // Keyboard: ArrowLeft/Right are handled globally (seek by the configured
+    // step); add Home/End here so a focused slider can jump to clip bounds.
+    els.seek.addEventListener("keydown", (evt) => {
+      this.handleKey(evt);
+    });
+  }
+
+  private handleKey(evt: KeyboardEvent): void {
+    const dur = isFinite(this.controller.duration) ? this.controller.duration : 0;
+    if (dur <= 0) {
+      return;
+    }
+    if (evt.key === "Home") {
+      this.controller.seekTo(0);
+      evt.preventDefault();
+    } else if (evt.key === "End") {
+      this.controller.seekTo(dur);
+      evt.preventDefault();
+    }
   }
 
   public isScrubbing(): boolean {
@@ -77,6 +97,10 @@ export class Seekbar {
     els.seekPlayed.style.width = pct + "%";
     els.seekHandle.style.left = pct + "%";
     els.timeCur.textContent = formatTime(t);
+    if (dur > 0) {
+      els.seek.setAttribute("aria-valuenow", String(Math.floor(t)));
+      els.seek.setAttribute("aria-valuetext", formatTime(t) + " of " + formatTime(dur));
+    }
   }
 
   public endScrub(evt: MouseEvent | TouchEvent): void {
