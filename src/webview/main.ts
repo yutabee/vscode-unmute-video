@@ -164,7 +164,10 @@ els.copyPathBtn.addEventListener("click", function () {
   vscode.postMessage({ type: "action", name: "copyPath" });
 });
 els.statusAction.addEventListener("click", function () {
-  if (pendingStatusAction) {
+  // Only act when the button is actually visible: a status can be cleared (and
+  // the button hidden) without nulling pendingStatusAction, so guard on hidden
+  // to avoid posting a stale action.
+  if (pendingStatusAction && !els.statusAction.hidden) {
     vscode.postMessage({ type: "action", name: pendingStatusAction });
   }
 });
