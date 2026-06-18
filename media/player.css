@@ -430,6 +430,29 @@ html, body {
   color: var(--warn-txt);
 }
 
+/* Optional action button inside the status bar (e.g. Trust workspace) */
+.status-action {
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding: 3px 10px;
+  border: 1px solid currentColor;
+  border-radius: 5px;
+  background: transparent;
+  color: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.status-action:hover {
+  background: rgba(127, 127, 127, 0.18);
+}
+
+.status-action:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
 .spinner {
   flex: 0 0 auto;
   width: 14px;

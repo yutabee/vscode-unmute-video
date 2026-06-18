@@ -151,6 +151,11 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
                     } else if (message.name === 'copyPath') {
                         void vscode.env.clipboard.writeText(fsPath);
                         void vscode.window.showInformationMessage('Unmute Video: file path copied to clipboard.');
+                    } else if (message.name === 'trustWorkspace') {
+                        // Open the Workspace Trust editor; the user decides — we never grant trust.
+                        void vscode.commands.executeCommand('workbench.trust.manage');
+                    } else if (message.name === 'openFfmpegSettings') {
+                        void vscode.commands.executeCommand('workbench.action.openSettings', 'unmuteVideo.ffmpegPath');
                     }
                     break;
                 }

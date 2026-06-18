@@ -33,6 +33,7 @@ export const els = {
   status: document.getElementById("status") as HTMLElement,
   statusSpinner: document.getElementById("statusSpinner") as HTMLElement,
   statusText: document.getElementById("statusText") as HTMLElement,
+  statusAction: document.getElementById("statusAction") as HTMLButtonElement,
 
   openExternalBtn: document.getElementById("openExternalBtn") as HTMLButtonElement,
   copyPathBtn: document.getElementById("copyPathBtn") as HTMLButtonElement,

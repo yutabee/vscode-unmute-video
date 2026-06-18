@@ -1,11 +1,11 @@
 "use strict";
 
-import type { HostToWebview, WebviewToHost } from "../protocol";
+import type { HostToWebview, WebviewAction, WebviewToHost } from "../protocol";
 
 import { els } from "./dom";
 import { PlayerController } from "./playerController";
 import { Seekbar } from "./seekbar";
-import { clearStatus, showStatus } from "./status";
+import { clearStatus, setStatusAction, showStatus } from "./status";
 
 declare function acquireVsCodeApi(): {
   postMessage(message: WebviewToHost): void;
@@ -23,6 +23,10 @@ controller.setScrubProvider(function () {
   return seekbar.isScrubbing();
 });
 
+// The host action the status-bar button should trigger when shown (e.g. the
+// "Trust workspace" / "Open settings" buttons on the ffmpeg/trust warnings).
+let pendingStatusAction: WebviewAction | null = null;
+
 // ----- Message handling -----
 window.addEventListener("message", function (event: MessageEvent<HostToWebview>) {
   const msg = event.data;
@@ -38,10 +42,13 @@ window.addEventListener("message", function (event: MessageEvent<HostToWebview>)
       controller.setNativeAudio(!!msg.nativeAudio);
       controller.setSeekStep(msg.seekStep);
       controller.applyPreferences(msg.preferences);
+      pendingStatusAction = null;
       if (msg.audioPending) {
         showStatus("Extracting audio…", "loading");
       } else if (msg.ffmpegMissing) {
-        showStatus("Install ffmpeg for audio (e.g. brew install ffmpeg)", "warning");
+        showStatus("Audio needs ffmpeg, which wasn't found. Install it (see README) or set its path in Settings.", "warning");
+        pendingStatusAction = "openFfmpegSettings";
+        setStatusAction("Open settings");
       } else {
         clearStatus();
       }
@@ -69,7 +76,9 @@ window.addEventListener("message", function (event: MessageEvent<HostToWebview>)
       break;
 
     case "audioUntrusted":
-      showStatus("Audio is disabled in untrusted workspaces. Trust this workspace to enable sound.", "warning");
+      showStatus("Audio is disabled because this workspace isn't trusted.", "warning");
+      pendingStatusAction = "trustWorkspace";
+      setStatusAction("Trust workspace");
       break;
   }
 });
@@ -153,6 +162,11 @@ els.openExternalBtn.addEventListener("click", function () {
 });
 els.copyPathBtn.addEventListener("click", function () {
   vscode.postMessage({ type: "action", name: "copyPath" });
+});
+els.statusAction.addEventListener("click", function () {
+  if (pendingStatusAction) {
+    vscode.postMessage({ type: "action", name: pendingStatusAction });
+  }
 });
 
 // ----- Keyboard shortcuts -----

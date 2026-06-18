@@ -31,7 +31,7 @@ export type HostToWebview =
     | { type: 'audioUntrusted' };
 
 /** Actions the webview can ask the host to perform. */
-export type WebviewAction = 'openExternal' | 'copyPath';
+export type WebviewAction = 'openExternal' | 'copyPath' | 'trustWorkspace' | 'openFfmpegSettings';
 
 /** Messages the webview sends to the extension host. */
 export type WebviewToHost =
