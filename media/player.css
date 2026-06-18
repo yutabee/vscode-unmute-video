@@ -260,6 +260,9 @@ html, body {
   row-gap: 6px;
   padding: 6px 8px;
   background: var(--panel);
+  /* Keep the bar distinct in High Contrast themes, where --panel collapses to
+     the page background and the bar would otherwise have no visible edge. */
+  border: 1px solid var(--border);
   border-radius: var(--radius);
 }
 
