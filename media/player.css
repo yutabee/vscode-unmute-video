@@ -281,10 +281,14 @@ html, body {
   color: #fff;
 }
 
-/* icon toggling */
-.ic-pause,
-.ic-muted,
-.ic-fs-exit {
+/* icon toggling.
+   These selectors are scoped to `.btn` so they out-specify the `.btn svg`
+   base rule above (which sets display:block); without the `.btn ` prefix the
+   "off" icon of every toggle would stay visible and the paused/unmuted/windowed
+   states would render BOTH icons at once. */
+.btn .ic-pause,
+.btn .ic-muted,
+.btn .ic-fs-exit {
   display: none;
 }
 
