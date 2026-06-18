@@ -6,7 +6,7 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const { StreamServer } = require('../out/streamServer.js');
+const { StreamServer } = require('../out/server/streamServer.js');
 const { makeTempDir } = require('../test-support/tmp.js');
 
 // ---------------------------------------------------------------------------

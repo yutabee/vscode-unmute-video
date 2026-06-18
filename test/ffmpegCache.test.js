@@ -1,7 +1,7 @@
 'use strict';
 
 // Characterization tests for findFfmpeg()'s caching + override/fallback paths
-// (src/audio.ts -> out/audio.js). These lock in the observable behavior of the
+// (src/media/audio.ts -> out/media/audio.js). These lock in the observable behavior of the
 // override branch before/after it is refactored into a shared memoizer, so the
 // refactor cannot silently change it.
 //
@@ -14,7 +14,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 
-const { findFfmpeg, resetFfmpegCache } = require('../out/audio.js');
+const { findFfmpeg, resetFfmpegCache } = require('../out/media/audio.js');
 const { createCleanup, makeProbeFake, makeTempDir } = require('../test-support');
 
 const BOGUS = '/nonexistent/path/does/not/exist/ffmpeg-bogus-xyz';

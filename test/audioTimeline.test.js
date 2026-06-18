@@ -12,7 +12,7 @@ const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const { execFile } = require('node:child_process');
 
-const { extractAudio } = require('../out/audio.js');
+const { extractAudio } = require('../out/media/audio.js');
 const {
   createCleanup,
   discoverFfmpeg,

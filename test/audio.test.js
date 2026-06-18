@@ -1,6 +1,6 @@
 'use strict';
 
-// Exercises the real ffmpeg extraction path (src/audio.ts -> out/audio.js).
+// Exercises the real ffmpeg extraction path (src/media/audio.ts -> out/media/audio.js).
 // Requires ffmpeg on the machine; when it is absent every test self-skips, since
 // the audio feature itself is a no-op without ffmpeg.
 
@@ -10,7 +10,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
-const { extractAudio } = require('../out/audio.js');
+const { extractAudio } = require('../out/media/audio.js');
 const {
   createCleanup,
   discoverFfmpeg,

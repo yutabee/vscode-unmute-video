@@ -13,5 +13,5 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src/webview", "src/protocol.ts"]
+  "include": ["src/webview", "src/shared/protocol.ts"]
 }

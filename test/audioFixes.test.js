@@ -14,7 +14,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 
-const { extractAudio } = require('../out/audio.js');
+const { extractAudio } = require('../out/media/audio.js');
 const {
   createCleanup,
   discoverFfmpeg,

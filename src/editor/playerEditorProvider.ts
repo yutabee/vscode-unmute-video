@@ -2,15 +2,15 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
-import { StreamServer } from './streamServer';
+import { StreamServer } from '../server/streamServer';
 import { AudioExtractionController } from './audioExtractionController';
-import { isNativeAudioFormat } from './mediaFormat';
-import { resolveSeekStep } from './config';
-import { clampPreferences } from './preferences';
-import type { Preferences } from './preferences';
-import { resumeKey } from './resume';
-import { sidecarCandidates, srtToVtt } from './subtitles';
-import type { HostToWebview, WebviewToHost } from './protocol';
+import { isNativeAudioFormat } from '../media/mediaFormat';
+import { resolveSeekStep } from '../shared/config';
+import { clampPreferences } from '../shared/preferences';
+import type { Preferences } from '../shared/preferences';
+import { resumeKey } from '../shared/resume';
+import { sidecarCandidates, srtToVtt } from '../media/subtitles';
+import type { HostToWebview, WebviewToHost } from '../shared/protocol';
 
 const PREFS_KEY = 'unmuteVideo.preferences';
 

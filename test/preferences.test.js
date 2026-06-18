@@ -1,6 +1,6 @@
 'use strict';
 
-// Pure preference normalization (src/preferences.ts -> out/preferences.js). No
+// Pure preference normalization (src/shared/preferences.ts -> out/shared/preferences.js). No
 // vscode/DOM dependency, so it is exercised directly in Node. This is the
 // machine-checkable contract for persisting volume / muted / playbackRate:
 // values read back from storage are untrusted and must be clamped to safe
@@ -9,7 +9,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 
-const { clampPreferences } = require('../out/preferences.js');
+const { clampPreferences } = require('../out/shared/preferences.js');
 
 test('clampPreferences returns sane defaults for missing input', () => {
   assert.deepEqual(clampPreferences(undefined), { volume: 1, muted: false, playbackRate: 1 });

@@ -1,6 +1,6 @@
 'use strict';
 
-// Pure format classification (src/mediaFormat.ts -> out/mediaFormat.js). No
+// Pure format classification (src/media/mediaFormat.ts -> out/media/mediaFormat.js). No
 // vscode/DOM dependency, so it is exercised directly in Node. This is the
 // machine-checkable contract for the webm (native-audio) branch: .webm plays
 // its audio natively in the webview, while the AAC containers stay muted and
@@ -9,7 +9,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 
-const { isNativeAudioFormat, VIDEO_EXTENSIONS } = require('../out/mediaFormat.js');
+const { isNativeAudioFormat, VIDEO_EXTENSIONS } = require('../out/media/mediaFormat.js');
 
 test('webm is a native-audio format (case-insensitive)', () => {
   assert.equal(isNativeAudioFormat('/x/clip.webm'), true);
