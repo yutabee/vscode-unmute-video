@@ -5,6 +5,7 @@ import { RESUME_END_THRESHOLD_SEC, shouldResume } from "../resume";
 
 import { FRAME_STEP_SECONDS } from "../config";
 import { nextLoopTarget, type LoopState } from "./abLoop";
+import { BufferingOverlay } from "./bufferingOverlay";
 import { canResumeAudio, DEFAULT_DRIFT_TUNING, driftAction, isBenignPlayError } from "./sync";
 import { els } from "./dom";
 import { renderLoopMarkers } from "./seekbar";
@@ -33,8 +34,17 @@ export class PlayerController {
   // True while the video is held paused *because the audio track underran*. The
   // pause is masked from the UI/progress so it reads as buffering, not a stop.
   private waitingForAudio = false;
-  // Debounce timer for the stage buffering spinner, so micro-stalls don't flash it.
-  private bufferingTimer: number | undefined;
+  // Stage buffering spinner with a debounce so micro-stalls don't flash it. The
+  // debounce/cancel logic lives in a pure BufferingOverlay so it is unit-tested
+  // with a fake clock; this only wires it to the CSS class toggle.
+  private readonly buffering = new BufferingOverlay(
+    () => els.player.classList.add("is-buffering"),
+    () => els.player.classList.remove("is-buffering"),
+    {
+      setTimeout: (handler, ms) => window.setTimeout(handler, ms),
+      clearTimeout: (id) => window.clearTimeout(id),
+    },
+  );
   private loop: LoopState = { a: null, b: null, whole: false, duration: 0 };
   // Whether a drag-scrub is in progress. Wired by the Seekbar via
   // setScrubProvider so the timeupdate handler can skip redrawing the bar
@@ -165,6 +175,10 @@ export class PlayerController {
     if (this.audio) {
       this.audio.pause();
     }
+    // A user stop must cancel any pending/active buffering spinner; otherwise the
+    // debounced spinner can fire onto (or linger over) a stopped frame and read
+    // as a freeze.
+    this.hideBuffering();
     // If the video was already held paused for buffering, pausing it fires no
     // 'pause' event, so reflect the stopped state in the UI here.
     if (wasBufferHeld) {
@@ -195,21 +209,11 @@ export class PlayerController {
 
   // Show the stage spinner after a short delay so brief stalls don't flicker it.
   private showBuffering(): void {
-    if (this.bufferingTimer !== undefined) {
-      return;
-    }
-    this.bufferingTimer = window.setTimeout(() => {
-      this.bufferingTimer = undefined;
-      els.player.classList.add("is-buffering");
-    }, 250);
+    this.buffering.show();
   }
 
   private hideBuffering(): void {
-    if (this.bufferingTimer !== undefined) {
-      window.clearTimeout(this.bufferingTimer);
-      this.bufferingTimer = undefined;
-    }
-    els.player.classList.remove("is-buffering");
+    this.buffering.hide();
   }
 
   private showStageError(message: string): void {
@@ -241,13 +245,26 @@ export class PlayerController {
     }
     this.waitingForAudio = false;
     if (this.userIntendsPlay) {
-      this.hideBuffering();
       this.syncAudioToVideo();
-      els.video.play().catch(function () {});
+      // Keep the spinner up until the video actually resumes (its own 'playing'
+      // handler hides it) so we don't flash "playing, no spinner, silent". If
+      // play() rejects there is no 'playing' event, so drop to a stopped state
+      // here rather than spinning over a frame that will never advance.
+      els.video.play().catch(() => this.dropToPausedFromBuffering());
       if (this.audio && canResumeAudio(this.audio.readyState, this.audio.seeking)) {
         this.tryPlayAudio();
       }
     }
+  }
+
+  // A buffering resume failed to start the video. Reflect a real stop so the UI
+  // doesn't keep a spinner over a frame that will never advance.
+  private dropToPausedFromBuffering(): void {
+    this.userIntendsPlay = false;
+    this.hideBuffering();
+    els.player.classList.remove("is-playing");
+    els.player.classList.add("is-paused");
+    els.playBtn.setAttribute("aria-pressed", "false");
   }
 
   // An audio readiness event fired. Resume whichever path was waiting on it:
@@ -640,6 +657,9 @@ export class PlayerController {
       if (this.waitingForAudio) {
         return;
       }
+      // A genuine stop ends any buffering spinner so it can't linger over the
+      // paused frame.
+      this.hideBuffering();
       els.player.classList.remove("is-playing");
       els.player.classList.add("is-paused");
       els.playBtn.setAttribute("aria-pressed", "false");
@@ -689,6 +709,8 @@ export class PlayerController {
       // restarts from the end instead of being read as a pause.
       this.userIntendsPlay = false;
       this.waitingForAudio = false;
+      // Reaching the end clears any spinner so it doesn't sit over the last frame.
+      this.hideBuffering();
       if (this.audio) {
         this.audio.pause();
       }
