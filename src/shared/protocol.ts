@@ -6,7 +6,7 @@
  * The webview bundle is produced by esbuild, so both ends can `import type`
  * these definitions as a normal module. Being type-only, this module emits no
  * runtime JavaScript (esbuild drops it from the bundle; tsc emits an empty
- * `out/protocol.js` on the host side).
+ * `out/shared/protocol.js` on the host side).
  */
 
 import type { Preferences } from './preferences';

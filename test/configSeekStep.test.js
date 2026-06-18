@@ -1,6 +1,6 @@
 'use strict';
 
-// Pure config helpers (src/config.ts -> out/config.js). No vscode/DOM
+// Pure config helpers (src/shared/config.ts -> out/shared/config.js). No vscode/DOM
 // dependency, so they are exercised directly in Node. This is the
 // machine-checkable contract for the configurable seek step (used by J/L and
 // the arrow keys) and the fixed frame-step delta.
@@ -8,7 +8,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 
-const { resolveSeekStep, FRAME_STEP_SECONDS } = require('../out/config.js');
+const { resolveSeekStep, FRAME_STEP_SECONDS } = require('../out/shared/config.js');
 
 test('resolveSeekStep defaults to 10 seconds for missing/invalid input', () => {
   assert.equal(resolveSeekStep(undefined), 10);

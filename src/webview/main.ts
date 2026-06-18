@@ -1,6 +1,6 @@
 "use strict";
 
-import type { HostToWebview, WebviewAction, WebviewToHost } from "../protocol";
+import type { HostToWebview, WebviewAction, WebviewToHost } from "../shared/protocol";
 
 import { els } from "./dom";
 import { PlayerController } from "./playerController";

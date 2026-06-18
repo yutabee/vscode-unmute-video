@@ -21,14 +21,14 @@ Module._load = function (request, ...rest) {
     return realLoad.call(this, request, ...rest);
 };
 
-const audioModule = require('../out/audio.js');
+const audioModule = require('../out/media/audio.js');
 const originalAudio = {
     findFfmpeg: audioModule.findFfmpeg,
     extractAudio: audioModule.extractAudio,
     resolveFfmpegOverride: audioModule.resolveFfmpegOverride,
 };
-const { resolveSeekStep } = require('../out/config.js');
-const { AudioExtractionController } = require('../out/audioExtractionController.js');
+const { resolveSeekStep } = require('../out/shared/config.js');
+const { AudioExtractionController } = require('../out/editor/audioExtractionController.js');
 
 const FS_PATH = '/tmp/unmute/clip.mp4';
 const PREFERENCES = { volume: 0.4, muted: true, playbackRate: 1.25 };

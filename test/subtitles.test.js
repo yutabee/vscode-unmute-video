@@ -1,6 +1,6 @@
 'use strict';
 
-// Pure SRT->WebVTT conversion (src/subtitles.ts -> out/subtitles.js). No
+// Pure SRT->WebVTT conversion (src/media/subtitles.ts -> out/media/subtitles.js). No
 // vscode/DOM dependency, so it is exercised directly in Node. This is the
 // machine-checkable contract for sidecar subtitle support: a same-name .srt
 // file is converted to WebVTT before being streamed to the <track> element.
@@ -8,7 +8,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 
-const { srtToVtt } = require('../out/subtitles.js');
+const { srtToVtt } = require('../out/media/subtitles.js');
 
 const SRT = [
   '1',

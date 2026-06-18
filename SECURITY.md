@@ -20,7 +20,7 @@ published version; please upgrade to the newest version before reporting.
 ## Security model
 
 The extension is designed to keep untrusted media at arm's length. Key
-properties (see `src/streamServer.ts`, `src/audio.ts`, `src/playerEditorProvider.ts`):
+properties (see `src/server/streamServer.ts`, `src/media/audio.ts`, `src/editor/playerEditorProvider.ts`):
 
 - **Loopback-only media server.** Files are streamed from an HTTP server bound to
   `127.0.0.1` on an OS-assigned port. Paths are never exposed directly: a caller

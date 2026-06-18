@@ -3,7 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const { findFfmpeg, resetFfmpegCache } = require('../out/audio.js');
+const { findFfmpeg, resetFfmpegCache } = require('../out/media/audio.js');
 const { execFileAsync } = require('./exec.js');
 
 async function discoverFfmpeg() {

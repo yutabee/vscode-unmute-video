@@ -124,11 +124,11 @@ Press <kbd>F5</kbd> ("Run Extension") to launch an Extension Development Host.
 | Path | Role |
 | --- | --- |
 | `src/extension.ts` | activation: start the stream server, register the editor + command |
-| `src/streamServer.ts` | loopback HTTP server, token-gated, HTTP Range streaming |
-| `src/playerEditorProvider.ts` | custom editor: webview wiring, video token, trust handling |
-| `src/audioExtractionController.ts` | per-editor audio-extraction lifecycle (ffmpeg → mp3 → stream token) |
-| `src/audio.ts` | ffmpeg discovery + audio extraction (no `vscode` import) |
-| `src/protocol.ts` | host ↔ webview message types (type-only module), shared by both ends |
+| `src/server/streamServer.ts` | loopback HTTP server, token-gated, HTTP Range streaming |
+| `src/editor/playerEditorProvider.ts` | custom editor: webview wiring, video token, trust handling |
+| `src/editor/audioExtractionController.ts` | per-editor audio-extraction lifecycle (ffmpeg → mp3 → stream token) |
+| `src/media/audio.ts` | ffmpeg discovery + audio extraction (no `vscode` import) |
+| `src/shared/protocol.ts` | host ↔ webview message types (type-only module), shared by both ends |
 | `src/webview/` | in-webview player, bundled to `media/player.js`: `main.ts` (entry + wiring), `playerController.ts` (video/audio sync + drift), `seekbar.ts`, `dom.ts`, `status.ts`, `util.ts` (pure, unit-tested helpers) |
 | `media/player.html` / `player.css` | webview markup + styles |
 

@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { StreamServer } from './streamServer';
-import { findFfmpeg, extractAudio, resolveFfmpegOverride } from './audio';
-import type { Preferences } from './preferences';
-import type { HostToWebview } from './protocol';
+import { StreamServer } from '../server/streamServer';
+import { findFfmpeg, extractAudio, resolveFfmpegOverride } from '../media/audio';
+import type { Preferences } from '../shared/preferences';
+import type { HostToWebview } from '../shared/protocol';
 
 /**
  * Owns the asynchronous audio-extraction lifecycle for one open editor:

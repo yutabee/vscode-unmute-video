@@ -1,9 +1,9 @@
-import { ALLOWED_RATES, clampPreferences } from "../preferences";
-import type { Preferences } from "../preferences";
-import type { WebviewToHost } from "../protocol";
-import { RESUME_END_THRESHOLD_SEC, shouldResume } from "../resume";
+import { ALLOWED_RATES, clampPreferences } from "../shared/preferences";
+import type { Preferences } from "../shared/preferences";
+import type { WebviewToHost } from "../shared/protocol";
+import { RESUME_END_THRESHOLD_SEC, shouldResume } from "../shared/resume";
 
-import { FRAME_STEP_SECONDS } from "../config";
+import { FRAME_STEP_SECONDS } from "../shared/config";
 import { nextLoopTarget, type LoopState } from "./abLoop";
 import { BufferingOverlay } from "./bufferingOverlay";
 import { canResumeAudio, DEFAULT_DRIFT_TUNING, driftAction, isBenignPlayError } from "./sync";

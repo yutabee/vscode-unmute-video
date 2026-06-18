@@ -8,7 +8,7 @@
 //  - package.json manifest declarations (scope, capabilities, extensionKind).
 //
 // resolveFfmpegOverride / pruneAudioCache are pure (no `vscode` import) so they
-// run directly against out/audio.js.
+// run directly against out/media/audio.js.
 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
@@ -16,7 +16,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
-const audio = require('../out/audio.js');
+const audio = require('../out/media/audio.js');
 const { createCleanup, makeTempDir } = require('../test-support/tmp.js');
 
 // ---------------------------------------------------------------------------

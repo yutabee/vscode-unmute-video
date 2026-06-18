@@ -1,6 +1,6 @@
 'use strict';
 
-// Pure resume helpers (src/resume.ts -> out/resume.js). No vscode/DOM
+// Pure resume helpers (src/shared/resume.ts -> out/shared/resume.js). No vscode/DOM
 // dependency, so they are exercised directly in Node. These are the
 // machine-checkable contract for "remember playback position": the host
 // persists currentTime keyed by file path and only restores it when the saved
@@ -9,7 +9,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 
-const { resumeKey, shouldResume } = require('../out/resume.js');
+const { resumeKey, shouldResume } = require('../out/shared/resume.js');
 
 test('resumeKey is a stable, path-distinct, non-empty string', () => {
   const a = resumeKey('/movies/a.mp4');

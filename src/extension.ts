@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
-import { StreamServer } from './streamServer';
-import { PlayerEditorProvider } from './playerEditorProvider';
-import { pruneAudioCache } from './audio';
-import { VIDEO_EXTENSIONS } from './mediaFormat';
+import { StreamServer } from './server/streamServer';
+import { PlayerEditorProvider } from './editor/playerEditorProvider';
+import { pruneAudioCache } from './media/audio';
+import { VIDEO_EXTENSIONS } from './media/mediaFormat';
 
 /**
  * Extension entry point. Starts the loopback streaming server, registers the
