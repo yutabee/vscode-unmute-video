@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1280" y2="640" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6D5EF6"/>
+      <stop offset="1" stop-color="#2A1E8C"/>
+    </linearGradient>
+    <linearGradient id="badge" x1="120" y1="200" x2="440" y2="520" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7E70FF"/>
+      <stop offset="1" stop-color="#241876"/>
+    </linearGradient>
+    <linearGradient id="play" x1="220" y1="280" x2="360" y2="450" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#D8E4FF"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect x="0" y="0" width="1280" height="640" fill="url(#bg)"/>
+
+  <!-- Icon badge -->
+  <g transform="translate(120,200)">
+    <rect x="0" y="0" width="320" height="320" rx="70" fill="url(#badge)" stroke="#FFFFFF" stroke-opacity="0.12" stroke-width="2"/>
+    <!-- Play triangle -->
+    <path d="M103 92 L103 228 L217 160 Z" fill="url(#play)" stroke="#FFFFFF" stroke-width="4" stroke-linejoin="round"/>
+    <!-- Sound waves -->
+    <g fill="none" stroke="#7BE7C2" stroke-linecap="round">
+      <path d="M238 118 A48 48 0 0 1 238 202" stroke-width="16"/>
+      <path d="M260 92 A78 78 0 0 1 260 228" stroke-width="16" opacity="0.65"/>
+    </g>
+  </g>
+
+  <!-- Text block -->
+  <g font-family="Helvetica Neue, Helvetica, Arial, sans-serif">
+    <text x="520" y="248" font-size="40" font-weight="700" fill="#7BE7C2" letter-spacing="2">VS CODE EXTENSION</text>
+    <text x="520" y="340" font-size="76" font-weight="800" fill="#FFFFFF">Video Player</text>
+    <text x="520" y="424" font-size="76" font-weight="800" fill="#FFFFFF">with Audio</text>
+    <text x="520" y="500" font-size="36" font-weight="400" fill="#D8E4FF">Play MP4 · MOV · WebM in VS Code</text>
+    <text x="520" y="548" font-size="36" font-weight="400" fill="#D8E4FF">— with sound, kept in sync.</text>
+  </g>
+</svg>
