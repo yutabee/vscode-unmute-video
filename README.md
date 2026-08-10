@@ -1,7 +1,7 @@
 # Video Player (with Audio)
 
 [![CI](https://github.com/yutabee/vscode-unmute-video/actions/workflows/ci.yml/badge.svg)](https://github.com/yutabee/vscode-unmute-video/actions/workflows/ci.yml)
-[![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/yutabee.unmute-video)](https://marketplace.visualstudio.com/items?itemName=yutabee.unmute-video)
+[![Visual Studio Marketplace Version](https://vsmarketplacebadges.dev/version/yutabee.unmute-video.svg)](https://marketplace.visualstudio.com/items?itemName=yutabee.unmute-video)
 [![Open VSX Version](https://img.shields.io/open-vsx/v/yutabee/unmute-video)](https://open-vsx.org/extension/yutabee/unmute-video)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/yutabee/vscode-unmute-video/blob/main/LICENSE.md)
 
