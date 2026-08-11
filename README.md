@@ -135,6 +135,10 @@ Press <kbd>F5</kbd> ("Run Extension") to launch an Extension Development Host.
 | `src/webview/` | in-webview player, bundled to `media/player.js`: `main.ts` (entry + wiring), `playerController.ts` (video/audio sync + drift), `seekbar.ts`, `dom.ts`, `status.ts`, `util.ts` (pure, unit-tested helpers) |
 | `media/player.html` / `player.css` | webview markup + styles |
 
+## Support
+
+This extension is maintained in my own time — if it saves you some, you can [sponsor its upkeep](https://github.com/sponsors/yutabee). It is entirely optional and does not change how issues are handled.
+
 ## License
 
 MIT
