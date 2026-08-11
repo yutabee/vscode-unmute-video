@@ -2,7 +2,9 @@
 
 [![CI](https://github.com/yutabee/vscode-unmute-video/actions/workflows/ci.yml/badge.svg)](https://github.com/yutabee/vscode-unmute-video/actions/workflows/ci.yml)
 [![Visual Studio Marketplace Version](https://vsmarketplacebadges.dev/version/yutabee.unmute-video.svg)](https://marketplace.visualstudio.com/items?itemName=yutabee.unmute-video)
+[![Visual Studio Marketplace Downloads](https://vsmarketplacebadges.dev/downloads-short/yutabee.unmute-video.svg?label=marketplace%20downloads)](https://marketplace.visualstudio.com/items?itemName=yutabee.unmute-video)
 [![Open VSX Version](https://img.shields.io/open-vsx/v/yutabee/unmute-video)](https://open-vsx.org/extension/yutabee/unmute-video)
+[![Open VSX Downloads](https://img.shields.io/open-vsx/dt/yutabee/unmute-video?label=open%20vsx%20downloads)](https://open-vsx.org/extension/yutabee/unmute-video)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/yutabee/vscode-unmute-video/blob/main/LICENSE.md)
 
 Play MP4 / MOV / M4V / WebM videos **with sound** directly inside VS Code — audio that actually plays, and stays in sync.
