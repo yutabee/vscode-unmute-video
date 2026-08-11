@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.5] - 2026-08-11
+
+Maintenance release. The player itself is unchanged; this covers dependency
+security fixes and listing metadata.
+
+### Security
+
+- Updated `undici` to 7.29.0, resolving five advisories (one high, four
+  moderate) covering cross-user information disclosure via cache directives,
+  response desynchronization, cookie attribute injection, and CRLF injection.
+- Updated `brace-expansion` to 5.0.9, `fast-uri` to 3.1.5, `js-yaml` to 4.3.1,
+  and `linkify-it` to 5.0.2, resolving four further advisories.
+- All of the above reach the project only through `@vscode/vsce`, which is used
+  for packaging. None of the affected code ships inside the extension.
+
+### Changed
+
+- The Marketplace version badge now comes from `vsmarketplacebadges.dev`.
+  shields.io retired its `visual-studio-marketplace` badge family, so the
+  previous badge rendered as "retired badge" for every extension.
+- Added download-count badges for the Marketplace and Open VSX listings.
+- Added a Sponsor link, which surfaces a Sponsor button on the extension page
+  and on the repository.
+
+### Packaging
+
+- Dependabot no longer opens TypeScript major-version updates. `typescript-eslint`
+  declares a peer range of `typescript >=4.8.4 <6.1.0`, so moving to TypeScript 7
+  fails dependency resolution with a conflict that cannot be fixed from this
+  side. Minor and patch updates are unaffected.
+
 ## [0.2.4] - 2026-08-01
 
 Maintenance release. No user-facing behaviour changes.
@@ -150,7 +181,8 @@ Maintenance release. No user-facing behaviour changes.
 - The `unmuteVideo.ffmpegPath` setting is machine-scoped, so a workspace cannot
   redirect the extension to an arbitrary executable.
 
-[Unreleased]: https://github.com/yutabee/vscode-unmute-video/compare/v0.2.4...HEAD
+[Unreleased]: https://github.com/yutabee/vscode-unmute-video/compare/v0.2.5...HEAD
+[0.2.5]: https://github.com/yutabee/vscode-unmute-video/compare/v0.2.4...v0.2.5
 [0.2.4]: https://github.com/yutabee/vscode-unmute-video/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/yutabee/vscode-unmute-video/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/yutabee/vscode-unmute-video/compare/v0.2.1...v0.2.2
