@@ -15,6 +15,9 @@
   },
   "homepage": "https://github.com/yutabee/vscode-unmute-video#readme",
   "qna": "https://github.com/yutabee/vscode-unmute-video/issues",
+  "sponsor": {
+    "url": "https://github.com/sponsors/yutabee"
+  },
   "pricing": "Free",
   "galleryBanner": {
     "color": "#241b3a",
