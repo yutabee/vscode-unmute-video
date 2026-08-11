@@ -7,6 +7,14 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: "chore(deps)"
+    ignore:
+      # typescript-eslint の peer 範囲が typescript ">=4.8.4 <6.1.0" のため、
+      # TypeScript 7 に上げると npm ci が ERESOLVE で失敗する (#74)。
+      # upstream 未対応で我々の側では解消できないので major だけ止める。
+      # 解除条件: `npm view typescript-eslint peerDependencies` の typescript 範囲が
+      # 7 系を含んだら、この ignore を削除して major 更新を再開する。
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
