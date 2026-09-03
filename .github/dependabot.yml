@@ -15,6 +15,12 @@ updates:
       # 7 系を含んだら、この ignore を削除して major 更新を再開する。
       - dependency-name: typescript
         update-types: ["version-update:semver-major"]
+      # @types/vscode は engines.vscode (現在 ^1.90.0) を超えられない。
+      # 超えると vsce が "greater than engines.vscode" で package を拒否し、CI が落ちる
+      # (#60 / #115 で 2 回発生)。この 2 つは常に手で揃える対象であって、
+      # 単独で自動更新してよい依存ではない。
+      # 解除条件: engines.vscode を引き上げる時に @types/vscode も同じ版へ手動で更新する。
+      - dependency-name: "@types/vscode"
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
@@ -22,3 +28,13 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: "chore(deps)"
+    groups:
+      # codeql-action は init と analyze を同一 SHA で pin している。
+      # 既定では Dependabot がこれを 2 本の PR に分けるため、片方だけ merge すると
+      # SHA が食い違って CodeQL が configuration error で落ちる。
+      # #69/#71, #78/#79, #87/#88, #102/#103, #112/#113, #116/#117, #118/#119 と
+      # 7 回とも同じ形で failure し、毎回 1 本に統合し直していた。
+      # group にまとめて 1 PR で両方を動かす。
+      codeql-action:
+        patterns:
+          - "github/codeql-action*"
