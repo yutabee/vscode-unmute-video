@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.6] - 2026-09-03
+
+Maintenance release. The player itself is unchanged. This publishes the current
+README to the extension listings and picks up dependency and CI updates.
+
+### Security
+
+- Updated `fast-uri` to 3.1.7, resolving six high-severity advisories covering
+  authority injection through an unvalidated port, host confusion through
+  IP-literal bracket handling and percent-encoded scheme normalization, and
+  server-side request forgery through hostname decoding and IPv6
+  normalization. It is a development-only dependency, reached through `ajv`,
+  so none of the affected code ships inside the extension.
+
+### Changed
+
+- The Marketplace and Open VSX listings now show the Sponsor section added to
+  the README. Listing pages render the README packaged into the published
+  `.vsix`, so a README change only becomes visible with a release.
+
+### Packaging
+
+- Dependabot now groups `github/codeql-action` updates into a single pull
+  request. `init` and `analyze` are pinned to the same commit, so splitting
+  them across two pull requests left the pair out of step and failed the
+  CodeQL job every week.
+- Dependabot no longer opens `@types/vscode` updates. The type package cannot
+  move ahead of `engines.vscode`, which declares the lowest supported VS Code
+  version, and packaging is refused when it does. Raising the supported floor
+  stays a deliberate manual decision.
+- Updated `github/codeql-action` to 4.37.9 and `softprops/action-gh-release`
+  to 3.0.3.
+- Updated development dependencies: `esbuild` 0.28.2, `eslint` 10.9.1,
+  `typescript-eslint` 8.68.0, `ovsx` 1.1.1, and `@types/node` 26.4.0.
+
 ## [0.2.5] - 2026-08-11
 
 Maintenance release. The player itself is unchanged; this covers dependency
@@ -181,7 +216,8 @@ Maintenance release. No user-facing behaviour changes.
 - The `unmuteVideo.ffmpegPath` setting is machine-scoped, so a workspace cannot
   redirect the extension to an arbitrary executable.
 
-[Unreleased]: https://github.com/yutabee/vscode-unmute-video/compare/v0.2.5...HEAD
+[Unreleased]: https://github.com/yutabee/vscode-unmute-video/compare/v0.2.6...HEAD
+[0.2.6]: https://github.com/yutabee/vscode-unmute-video/compare/v0.2.5...v0.2.6
 [0.2.5]: https://github.com/yutabee/vscode-unmute-video/compare/v0.2.4...v0.2.5
 [0.2.4]: https://github.com/yutabee/vscode-unmute-video/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/yutabee/vscode-unmute-video/compare/v0.2.2...v0.2.3
