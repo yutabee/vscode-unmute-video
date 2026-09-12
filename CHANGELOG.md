@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The Marketplace tags no longer advertise `mkv` and `avi`. The custom editor
+  opens `.mp4`, `.mov`, `.m4v` and `.webm` only, so anyone who searched for the
+  other two installed the extension and then found their file would not open in
+  it. The freed slots went to `playwright` and `screen recording`, both of which
+  the player does serve — Playwright records `.webm`, which needs no ffmpeg.
+
 ### Added
 
 - When ffmpeg is not found, the status bar now names the install command for
