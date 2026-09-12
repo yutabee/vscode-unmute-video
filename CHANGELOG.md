@@ -34,6 +34,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   The ffmpeg lookup is memoized for the life of the extension host, so
   installing ffmpeg and reopening the file left the video silent and read as
   though the install had not worked.
+- The README says up front that `.webm` needs nothing installed. The supported
+  formats table already carried it, but the first thing a reader met was the
+  ffmpeg-dependent MP4 path, so anyone without ffmpeg could conclude the
+  extension was no use to them. It also now names where these files tend to come
+  from, including Playwright test recordings, which are `.webm`.
+
+### Fixed
+
+- The Marketplace tags no longer advertise `mkv` and `avi`. The custom editor
+  opens `.mp4`, `.mov`, `.m4v` and `.webm` only, so anyone who searched for the
+  other two installed the extension and then found their file would not open in
+  it. The freed slots went to `playwright` and `screen recording`, both of which
+  the player does serve — Playwright records `.webm`, which needs no ffmpeg.
+
+### Security
+
+- Updated `js-yaml` to 4.3.2, resolving a high-severity advisory where
+  `maxTotalMergeKeys` did not bound CPU use for empty merge sources, and `qs`
+  to 6.16.0, resolving an array-limit bypass through bracket-key comma parsing
+  and a denial of service through an attacker-controlled `isBuffer`. Both reach
+  the project only through `@vscode/vsce`, which is used for packaging, so none
+  of the affected code ships inside the extension.
+
+### Packaging
+
+- The published `.vsix` no longer carries files only the repository needs. The
+  test helpers under `test-support/`, the GitHub social-preview images and the
+  ESLint config were all being packaged: `test/**` was excluded but its helper
+  directory was not, and `images/icon.svg` and `images/demo.gif` were excluded
+  while `images/social-preview.*` was missed. The download drops from 31 files
+  and 157 KB to 23 files and 54 KB, most of it the 127 KB social preview.
 
 ## [0.2.6] - 2026-09-03
 
