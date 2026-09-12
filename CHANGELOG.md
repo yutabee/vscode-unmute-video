@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- A published page at <https://yutabee.github.io/vscode-unmute-video/> explaining
+  why VS Code plays MP4 without sound — the webview runs on a Chromium build
+  without the AAC decoder — and what this extension does about it. It is a single
+  static file under `site/`, deployed by a `Pages` workflow, and excluded from the
+  packaged `.vsix`.
+
+### Changed
+
+- `homepage` now points at that page rather than the README anchor.
+
+### Added
+
 - When ffmpeg is not found, the status bar now names the install command for
   the platform it is running on — Homebrew on macOS, winget on Windows, apt on
   Debian/Ubuntu — and offers to copy it. The route to `unmuteVideo.ffmpegPath`

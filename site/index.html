@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Why VS Code plays your MP4 without sound</title>
+<meta name="description" content="VS Code's webview runs on a Chromium build without the AAC decoder, so an MP4 opened in the editor shows the picture and stays silent. Here is why — and a free, open-source extension that plays MP4, MOV, M4V and WebM with sound.">
+<link rel="canonical" href="https://yutabee.github.io/vscode-unmute-video/">
+
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://yutabee.github.io/vscode-unmute-video/">
+<meta property="og:title" content="Why VS Code plays your MP4 without sound">
+<meta property="og:description" content="The VS Code webview ships without the AAC decoder, so MP4 video plays silently. Here is why — and a free extension that gives it sound.">
+<meta property="og:image" content="https://raw.githubusercontent.com/yutabee/vscode-unmute-video/main/images/social-preview.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Why VS Code plays your MP4 without sound">
+<meta name="twitter:description" content="The VS Code webview ships without the AAC decoder, so MP4 video plays silently. Here is why — and a free extension that gives it sound.">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/yutabee/vscode-unmute-video/main/images/social-preview.png">
+
+<link rel="icon" href="https://raw.githubusercontent.com/yutabee/vscode-unmute-video/main/images/icon.png">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Video Player (with Audio)",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "macOS, Windows, Linux",
+  "url": "https://yutabee.github.io/vscode-unmute-video/",
+  "downloadUrl": "https://marketplace.visualstudio.com/items?itemName=yutabee.unmute-video",
+  "license": "https://opensource.org/licenses/MIT",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "author": { "@type": "Person", "name": "yutabee", "url": "https://github.com/yutabee" }
+}
+</script>
+
+<style>
+:root {
+  --bg: #ffffff;
+  --surface: #f5f4f8;
+  --border: #dedbe6;
+  --txt: #1c1a24;
+  --txt-dim: #5b5670;
+  --accent: #5b3fa8;
+  --accent-txt: #ffffff;
+  --code-bg: #efedf4;
+  --maxw: 46rem;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16131f;
+    --surface: #241b3a;
+    --border: #352b4d;
+    --txt: #ece9f3;
+    --txt-dim: #a49ec0;
+    --accent: #b49bff;
+    --accent-txt: #16131f;
+    --code-bg: #1f1a2e;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  padding: 0 1rem;
+  background: var(--bg);
+  color: var(--txt);
+  font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+main, header, footer { max-width: var(--maxw); margin: 0 auto; }
+header { padding-block: 3.5rem 1rem; }
+h1 { font-size: 1.95rem; line-height: 1.25; margin: 0 0 .75rem; letter-spacing: -.01em; }
+h2 { font-size: 1.3rem; margin: 2.75rem 0 .75rem; letter-spacing: -.005em; }
+p, li { color: var(--txt); }
+.lead { font-size: 1.1rem; color: var(--txt-dim); margin: 0 0 1.75rem; }
+a { color: var(--accent); }
+code {
+  background: var(--code-bg);
+  padding: .12em .38em;
+  border-radius: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .89em;
+}
+.cta { display: flex; flex-wrap: wrap; gap: .6rem; margin: 0 0 2rem; }
+.btn {
+  display: inline-block;
+  padding: .6rem 1.1rem;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: .95rem;
+}
+.btn-primary { background: var(--accent); color: var(--accent-txt); border-color: var(--accent); }
+.btn-secondary { color: var(--txt); background: var(--surface); }
+figure { margin: 0 0 2rem; }
+figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+}
+figcaption { color: var(--txt-dim); font-size: .87rem; margin-top: .55rem; }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: .95rem; }
+th, td { text-align: left; padding: .6rem .7rem; border-bottom: 1px solid var(--border); }
+th { color: var(--txt-dim); font-weight: 600; }
+.note {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 1rem 1.15rem;
+  margin: 1.75rem 0;
+}
+.note p { margin: 0; }
+ol li, ul li { margin-bottom: .4rem; }
+footer {
+  border-top: 1px solid var(--border);
+  margin-top: 3.5rem;
+  padding-block: 1.5rem 3rem;
+  color: var(--txt-dim);
+  font-size: .9rem;
+}
+footer a { color: var(--txt-dim); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Why VS Code plays your MP4 without sound</h1>
+  <p class="lead">Open an <code>.mp4</code> in VS Code and you get the picture, a seek bar, and
+  silence. Nothing is broken on your machine — the editor genuinely cannot decode the audio.</p>
+
+  <div class="cta">
+    <a class="btn btn-primary" href="https://marketplace.visualstudio.com/items?itemName=yutabee.unmute-video">Get it on the Marketplace</a>
+    <a class="btn btn-secondary" href="https://open-vsx.org/extension/yutabee/unmute-video">Open VSX (VSCodium, Cursor)</a>
+    <a class="btn btn-secondary" href="https://github.com/yutabee/vscode-unmute-video">Source on GitHub</a>
+  </div>
+</header>
+
+<main>
+  <figure>
+    <img src="https://raw.githubusercontent.com/yutabee/vscode-unmute-video/main/images/demo.gif"
+         alt="A video clip playing inside a VS Code editor tab, with a seek bar, volume slider and playback speed control.">
+    <figcaption>The extension playing a clip inside VS Code, with sound.</figcaption>
+  </figure>
+
+  <h2>The cause: a missing AAC decoder</h2>
+
+  <p>VS Code renders custom editors inside a webview, which runs on Electron — and Electron
+  builds on the open-source Chromium tree. That tree ships <strong>without the AAC decoder</strong>,
+  because AAC is patent-encumbered and shipping a decoder means licensing it. Google licenses
+  the codecs for the Chrome binary it distributes; the open-source build everyone else compiles
+  does not inherit that.</p>
+
+  <p>Almost every <code>.mp4</code> and <code>.mov</code> in the wild carries H.264 video with AAC
+  audio. The video track decodes fine. The audio track has no decoder to go to, so a plain
+  <code>&lt;video&gt;</code> element plays the picture and stays silent. No error, no warning —
+  which is exactly why it reads like a bug in your setup.</p>
+
+  <div class="note">
+    <p><strong>Quick check:</strong> a <code>.webm</code> file plays with sound in the same editor.
+    WebM carries Vorbis or Opus audio, which the open-source build <em>does</em> include. If WebM
+    has sound and MP4 does not, you are looking at the codec gap, not a broken install.</p>
+  </div>
+
+  <h2>How this extension works around it</h2>
+
+  <p><a href="https://marketplace.visualstudio.com/items?itemName=yutabee.unmute-video">Video Player (with Audio)</a>
+  is a free, MIT-licensed extension that sidesteps the missing decoder instead of waiting for it:</p>
+
+  <ol>
+    <li>The video file is served from a loopback HTTP server with Range support, so even large
+    files stream rather than loading into memory.</li>
+    <li><a href="https://ffmpeg.org/">ffmpeg</a> extracts the audio track to MP3 in the background —
+    a format the webview can decode.</li>
+    <li>The player shows a <strong>muted</strong> <code>&lt;video&gt;</code> next to a hidden
+    <code>&lt;audio&gt;</code> element and keeps the two in step, correcting drift continuously so
+    long clips do not slide out of sync.</li>
+  </ol>
+
+  <h2>What plays, and what needs ffmpeg</h2>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Format</th><th>Audio</th><th>Needs ffmpeg</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>.mp4</code> / <code>.mov</code> / <code>.m4v</code></td><td>Extracted via ffmpeg</td><td>Yes</td></tr>
+        <tr><td><code>.webm</code></td><td>Native</td><td>No</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p><code>.webm</code> needs nothing installed. That covers
+  <a href="https://playwright.dev/">Playwright</a> test recordings, which are WebM — you can watch
+  a failed test's video with sound without setting anything up.</p>
+
+  <p>For MP4, MOV and M4V you need ffmpeg on your <code>PATH</code>. If it is missing the video
+  still plays, just silently, and the player says so and offers the command for your platform:
+  <code>brew install ffmpeg</code> on macOS, <code>winget install Gyan.FFmpeg</code> on Windows,
+  <code>sudo apt install ffmpeg</code> on Debian and Ubuntu.</p>
+
+  <h2>Install</h2>
+
+  <ul>
+    <li>In VS Code, open the Extensions view and search for <strong>Video Player (with Audio)</strong>.</li>
+    <li>Or run <code>ext install yutabee.unmute-video</code> from Quick Open.</li>
+    <li>For VSCodium, Cursor and other Open VSX clients, install it from
+    <a href="https://open-vsx.org/extension/yutabee/unmute-video">Open VSX</a>.</li>
+  </ul>
+
+  <p>It registers as the default editor for <code>.mp4</code>, <code>.mov</code>, <code>.m4v</code>
+  and <code>.webm</code>. Opening one of those from the Explorer is all it takes.</p>
+</main>
+
+<footer>
+  <p>Free and MIT-licensed.
+  <a href="https://github.com/yutabee/vscode-unmute-video">Source</a> ·
+  <a href="https://github.com/yutabee/vscode-unmute-video/issues">Issues</a> ·
+  <a href="https://github.com/yutabee/vscode-unmute-video/blob/main/CHANGELOG.md">Changelog</a></p>
+</footer>
+
+</body>
+</html>
