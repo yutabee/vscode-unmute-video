@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Why VS Code plays your MP4 without sound</title>
+<meta name="description" content="VS Code's webview runs on a Chromium build without the AAC decoder, so an MP4 opened in the editor shows the picture and stays silent. Here is why — and a free, open-source extension that plays MP4, MOV, M4V and WebM with sound.">
+<link rel="canonical" href="https://yutabee.github.io/vscode-unmute-video/">
+
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://yutabee.github.io/vscode-unmute-video/">
+<meta property="og:title" content="Why VS Code plays your MP4 without sound">
+<meta property="og:description" content="The VS Code webview ships without the AAC decoder, so MP4 video plays silently. Here is why — and a free extension that gives it sound.">
+<meta property="og:image" content="https://raw.githubusercontent.com/yutabee/vscode-unmute-video/main/images/social-preview.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Why VS Code plays your MP4 without sound">
+<meta name="twitter:description" content="The VS Code webview ships without the AAC decoder, so MP4 video plays silently. Here is why — and a free extension that gives it sound.">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/yutabee/vscode-unmute-video/main/images/social-preview.png">
+
+<link rel="icon" href="https://raw.githubusercontent.com/yutabee/vscode-unmute-video/main/images/icon.png">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Video Player (with Audio)",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "macOS, Windows, Linux",
+  "url": "https://yutabee.github.io/vscode-unmute-video/",
+  "downloadUrl": "https://marketplace.visualstudio.com/items?itemName=yutabee.unmute-video",
+  "license": "https://opensource.org/licenses/MIT",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "author": { "@type": "Person", "name": "yutabee", "url": "https://github.com/yutabee" }
+}
+</script>
+
+<style>
+/* ---------------------------------------------------------------
+   Palette, type and chrome are taken from VS Code itself rather
+   than invented: Dark Modern for surfaces, Dark+ syntax colours for
+   meaning (teal = decodes as-is, orange = needs ffmpeg), and the
+   editor's own --vscode-font-family stack.
+   Dark is the base because VS Code's identity is dark; light is the
+   adaptation, not the other way round.
+   --------------------------------------------------------------- */
+:root {
+  --bg:        #1f1f1f;   /* editor.background          */
+  --chrome:    #181818;   /* titleBar / tab strip       */
+  --raised:    #252526;   /* editorWidget.background    */
+  --line:      #2b2b2b;   /* panel.border               */
+  --line-soft: #232323;
+  --txt:       #cccccc;   /* editor.foreground          */
+  --txt-loud:  #ffffff;
+  --txt-dim:   #9d9d9d;   /* descriptionForeground      */
+  --blue:      #0078d4;   /* statusBar / focusBorder    */
+  --blue-hi:   #1f8ad2;
+  --on-blue:   #ffffff;
+  --teal:      #4ec9b0;   /* Dark+ type                 */
+  --orange:    #ce9178;   /* Dark+ string               */
+  --green:     #6a9955;   /* Dark+ comment              */
+
+  --ui: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", system-ui, Ubuntu, "Droid Sans", sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Droid Sans Mono", monospace;
+
+  --measure: 40rem;
+  --gutter: 1.5rem;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg:        #ffffff;
+    --chrome:    #f8f8f8;
+    --raised:    #f3f3f3;
+    --line:      #e5e5e5;
+    --line-soft: #ededed;
+    --txt:       #3b3b3b;
+    --txt-loud:  #000000;
+    --txt-dim:   #616161;
+    --blue:      #005fb8;
+    --blue-hi:   #0f6cbd;
+    --on-blue:   #ffffff;
+    --teal:      #0f7d70;
+    --orange:    #a0522d;
+    --green:     #46733a;
+  }
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--txt);
+  font-family: var(--ui);
+  font-size: 16px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: var(--measure);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+a { color: var(--blue-hi); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a:hover { color: var(--txt-loud); }
+:focus-visible { outline: 1px solid var(--blue); outline-offset: 2px; }
+
+code {
+  font-family: var(--mono);
+  font-size: .88em;
+  color: var(--txt-loud);
+}
+
+/* ---------- Hero ---------- */
+
+.hero { padding-block: clamp(3rem, 9vw, 5.5rem) 0; }
+
+h1 {
+  margin: 0 0 1rem;
+  font-size: clamp(2rem, 6.2vw, 3.1rem);
+  line-height: 1.08;
+  letter-spacing: -.025em;
+  font-weight: 600;
+  color: var(--txt-loud);
+  text-wrap: balance;
+}
+
+.standfirst {
+  margin: 0 0 2.5rem;
+  font-size: 1.125rem;
+  line-height: 1.6;
+  color: var(--txt-dim);
+}
+
+/* ---------- The editor frame: the one bold element ----------
+   The page is about something that happens inside this chrome, so
+   the chrome is the illustration. The status bar states the cause. */
+
+.editor {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--bg);
+  margin-bottom: 2.25rem;
+}
+
+.editor-tabs {
+  display: flex;
+  align-items: stretch;
+  background: var(--chrome);
+  border-bottom: 1px solid var(--line);
+}
+
+.dots { display: flex; align-items: center; gap: 7px; padding-inline: 13px; }
+.dots i { width: 11px; height: 11px; border-radius: 50%; background: var(--line); }
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  padding: .6rem 1rem;
+  background: var(--bg);
+  border-right: 1px solid var(--line);
+  box-shadow: inset 0 1px 0 var(--blue);
+  font-size: .82rem;
+  color: var(--txt-loud);
+}
+.tab span { font-family: var(--mono); font-size: .78rem; }
+.tab svg { flex: none; color: var(--teal); }
+
+.editor img { display: block; width: 100%; height: auto; }
+
+.statusbar {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  padding: .42rem 1rem;
+  background: var(--blue);
+  color: var(--on-blue);
+  font-size: .8rem;
+  line-height: 1.45;
+}
+.statusbar svg { flex: none; }
+.statusbar .right {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: .72rem;
+  opacity: .82;
+  white-space: nowrap;
+}
+
+/* ---------- Actions ---------- */
+
+.actions { display: flex; flex-wrap: wrap; gap: .55rem; }
+
+.btn {
+  display: inline-block;
+  padding: .58rem 1.1rem;
+  border-radius: 3px;          /* VS Code buttons are barely rounded */
+  border: 1px solid transparent;
+  font-size: .92rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.btn-main { background: var(--blue); color: var(--on-blue); }
+.btn-main:hover { background: var(--blue-hi); color: var(--on-blue); }
+.btn-alt { border-color: var(--line); color: var(--txt); }
+.btn-alt:hover { background: var(--raised); color: var(--txt-loud); }
+
+/* ---------- Body ---------- */
+
+main { padding-block: clamp(3rem, 8vw, 4.5rem) 0; }
+
+section + section { margin-top: clamp(2.75rem, 7vw, 4rem); }
+
+h2 {
+  margin: 0 0 .9rem;
+  font-size: 1.4rem;
+  line-height: 1.3;
+  letter-spacing: -.012em;
+  font-weight: 600;
+  color: var(--txt-loud);
+}
+
+p { margin: 0 0 1.1rem; }
+p:last-child { margin-bottom: 0; }
+
+/* An aside in the voice of a code comment, because that is what it is:
+   a note beside the main explanation. */
+.check {
+  border-left: 2px solid var(--green);
+  padding: .1rem 0 .1rem 1.1rem;
+  margin: 1.75rem 0;
+  color: var(--txt-dim);
+}
+.check b { color: var(--green); font-weight: 600; }
+
+/* Genuinely a sequence, so it is numbered. */
+.steps { margin: 0; padding: 0; list-style: none; counter-reset: step; }
+/* The number hangs in the left gutter. The li stays a normal block so
+   inline children (links, <code>) keep flowing as text - making the li a
+   grid container puts each of them in its own cell. */
+.steps li {
+  counter-increment: step;
+  position: relative;
+  padding: .75rem 0 .75rem 2.1rem;
+  border-top: 1px solid var(--line-soft);
+}
+.steps li:last-child { border-bottom: 1px solid var(--line-soft); }
+.steps li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 1rem;
+  font-family: var(--mono);
+  font-size: .82rem;
+  line-height: 1;
+  color: var(--txt-dim);
+}
+
+.formats { width: 100%; border-collapse: collapse; font-size: .95rem; }
+.formats th, .formats td { text-align: left; padding: .65rem .8rem .65rem 0; border-bottom: 1px solid var(--line-soft); }
+.formats th { font-weight: 600; color: var(--txt-dim); font-size: .85rem; }
+.formats td:first-child { font-family: var(--mono); font-size: .85rem; color: var(--txt-loud); white-space: nowrap; }
+.yes { color: var(--teal); }
+.dep { color: var(--orange); }
+
+.cmds { margin: 1.1rem 0 0; padding: 0; list-style: none; font-size: .95rem; }
+.cmds li { display: flex; flex-wrap: wrap; gap: .1rem .8rem; padding-block: .3rem; }
+.cmds b { font-weight: 400; color: var(--txt-dim); min-width: 7.5rem; }
+.cmds code { color: var(--orange); }
+
+ul.plain { margin: 0; padding-left: 1.15rem; }
+.after-table { margin-top: 1.25rem; }
+.after-list { margin-top: 1.1rem; }
+ul.plain li { margin-bottom: .45rem; }
+
+footer {
+  margin-top: clamp(3.5rem, 9vw, 5rem);
+  border-top: 1px solid var(--line);
+  padding-block: 1.4rem 3.5rem;
+  color: var(--txt-dim);
+  font-size: .88rem;
+}
+footer a { color: var(--txt-dim); }
+footer a:hover { color: var(--txt-loud); }
+footer .lic { margin-bottom: .5rem; }
+.flinks { display: flex; flex-wrap: wrap; gap: .35rem 1.4rem; }
+
+/* A real status bar drops its right-hand items as the window narrows
+   rather than wrapping. Do the same. */
+@media (max-width: 33rem) {
+  .statusbar .right { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap hero">
+  <h1>Why VS Code plays your MP4 without sound</h1>
+  <p class="standfirst">You open a clip in the editor and get the picture, a seek bar, and silence.
+  Nothing is misconfigured on your machine — VS Code genuinely cannot decode the audio track.</p>
+
+  <div class="editor">
+    <div class="editor-tabs">
+      <div class="dots" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div class="tab">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M2 4.5A1.5 1.5 0 0 1 3.5 3h6A1.5 1.5 0 0 1 11 4.5v7A1.5 1.5 0 0 1 9.5 13h-6A1.5 1.5 0 0 1 2 11.5v-7Z" stroke="currentColor" stroke-width="1.2"/>
+          <path d="m11 7.5 3-1.8v4.6l-3-1.8v-1Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+        </svg>
+        <span>demo.mp4</span>
+      </div>
+    </div>
+
+    <img src="https://raw.githubusercontent.com/yutabee/vscode-unmute-video/main/images/demo.gif"
+         alt="A video clip playing in a VS Code editor tab, with a seek bar, volume slider and playback speed control.">
+
+    <div class="statusbar">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M8 3 5 5.5H3v5h2L8 13V3Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+        <path d="m11 6 4 4m0-4-4 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+      </svg>
+      <span>AAC &mdash; no decoder in the webview</span>
+      <span class="right">audio via ffmpeg</span>
+    </div>
+  </div>
+
+  <div class="actions">
+    <a class="btn btn-main" href="https://marketplace.visualstudio.com/items?itemName=yutabee.unmute-video">Install from the Marketplace</a>
+    <a class="btn btn-alt" href="https://open-vsx.org/extension/yutabee/unmute-video">Open VSX</a>
+    <a class="btn btn-alt" href="https://github.com/yutabee/vscode-unmute-video">Source</a>
+  </div>
+</div>
+
+<main class="wrap">
+
+  <section>
+    <h2>The cause is a missing AAC decoder</h2>
+    <p>VS Code draws custom editors inside a webview, which runs on Electron, which builds on the
+    open-source Chromium tree. That tree ships <b>without the AAC decoder</b>. AAC is
+    patent-encumbered, and shipping a decoder means licensing it — Google pays for the codecs in
+    the Chrome binary it distributes, and the open-source build everyone else compiles does not
+    inherit that deal.</p>
+
+    <p>Nearly every <code>.mp4</code> and <code>.mov</code> in circulation pairs H.264 video with
+    AAC audio. The video track decodes fine. The audio track has nowhere to go, so a plain
+    <code>&lt;video&gt;</code> element shows the picture and stays quiet. No error is raised, which
+    is why it reads like something broken at your end.</p>
+
+    <p class="check"><b>A 30-second check:</b> open a <code>.webm</code> file in the same editor.
+    WebM carries Vorbis or Opus audio, which the open-source build does include. Sound on WebM and
+    silence on MP4 means you are looking at the codec gap, not a broken install.</p>
+  </section>
+
+  <section>
+    <h2>What the extension does instead</h2>
+    <p><a href="https://marketplace.visualstudio.com/items?itemName=yutabee.unmute-video">Video
+    Player (with Audio)</a> is free and MIT-licensed. Rather than wait for a decoder that is not
+    coming, it routes around the gap:</p>
+
+    <ol class="steps">
+      <li>Serves the file from a loopback HTTP server that honours Range requests, so large clips
+      stream instead of loading into memory.</li>
+      <li>Runs <a href="https://ffmpeg.org/">ffmpeg</a> in the background to pull the audio track
+      out as MP3 — a format the webview can decode.</li>
+      <li>Plays a muted <code>&lt;video&gt;</code> beside a hidden <code>&lt;audio&gt;</code> element
+      and keeps the two in step, correcting drift as it goes so long clips do not slide apart.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>What plays, and what needs ffmpeg</h2>
+
+    <table class="formats">
+      <thead>
+        <tr><th scope="col">Format</th><th scope="col">Audio</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>.webm</td><td class="yes">Plays as-is — nothing to install</td></tr>
+        <tr><td>.mp4 .mov .m4v</td><td class="dep">Extracted with ffmpeg</td></tr>
+      </tbody>
+    </table>
+
+    <p class="after-table">WebM needing nothing covers
+    <a href="https://playwright.dev/">Playwright</a> test recordings, which are WebM — a failed
+    test's video plays with sound the moment the extension is installed.</p>
+
+    <p>For MP4, MOV and M4V, ffmpeg has to be on your <code>PATH</code>. Without it the video still
+    plays, just silently, and the player says so and hands you the command for your platform:</p>
+
+    <ul class="cmds">
+      <li><b>macOS</b><code>brew install ffmpeg</code></li>
+      <li><b>Windows</b><code>winget install Gyan.FFmpeg</code></li>
+      <li><b>Debian, Ubuntu</b><code>sudo apt install ffmpeg</code></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Install</h2>
+    <ul class="plain">
+      <li>Search the Extensions view for <b>Video Player (with Audio)</b>.</li>
+      <li>Or run <code>ext install yutabee.unmute-video</code> from Quick Open.</li>
+      <li>On VSCodium, Cursor and other Open VSX clients, install it from
+      <a href="https://open-vsx.org/extension/yutabee/unmute-video">Open VSX</a>.</li>
+    </ul>
+    <p class="after-list">It becomes the default editor for <code>.mp4</code>,
+    <code>.mov</code>, <code>.m4v</code> and <code>.webm</code>. Opening one from the Explorer is
+    all it takes.</p>
+  </section>
+
+</main>
+
+<footer class="wrap">
+  <p class="lic">Free and MIT-licensed.</p>
+  <nav class="flinks" aria-label="Project links">
+    <a href="https://github.com/yutabee/vscode-unmute-video">Source</a>
+    <a href="https://github.com/yutabee/vscode-unmute-video/issues">Issues</a>
+    <a href="https://github.com/yutabee/vscode-unmute-video/blob/main/CHANGELOG.md">Changelog</a>
+  </nav>
+</footer>
+
+</body>
+</html>

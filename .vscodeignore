@@ -6,6 +6,7 @@ test/**
 test-support/**
 out/webview/**
 docs/**
+site/**
 node_modules/**
 images/icon.svg
 images/demo.gif
