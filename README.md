@@ -14,6 +14,7 @@ Play MP4 / MOV / M4V / WebM videos **with sound** directly inside VS Code — au
 ## Features
 
 - 🔊 Plays **MP4 / MOV / M4V / WebM with real sound** — not the silent preview the built-in editor gives you.
+- 🪶 **WebM needs nothing installed** — it plays with native audio, so `.webm` works on a machine without ffmpeg.
 - 🎯 **Audio stays in sync** with the video through continuous drift correction, even on long clips.
 - 🚀 **Streams large files** over HTTP Range — the video is never loaded fully into memory.
 - ⌨️ **Full keyboard controls**, adjustable playback speed (0.5×–2×), and picture-in-picture.
@@ -26,6 +27,10 @@ Play MP4 / MOV / M4V / WebM videos **with sound** directly inside VS Code — au
 | --- | --- | --- |
 | `.mp4` / `.mov` / `.m4v` | ✅ extracted via ffmpeg | Yes |
 | `.webm` | ✅ native | No |
+
+Where these usually come from: screen recordings and bug reports from Loom,
+CleanShot or QuickTime (`.mp4` / `.mov`), and test videos from Playwright
+(`.webm`, so no ffmpeg) or Cypress (`.mp4`).
 
 ## Requirements
 

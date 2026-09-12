@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The README says up front that `.webm` needs nothing installed. The supported
+  formats table already carried it, but the first thing a reader met was the
+  ffmpeg-dependent MP4 path, so anyone without ffmpeg could conclude the
+  extension was no use to them. It also now names where these files tend to come
+  from, including Playwright test recordings, which are `.webm`.
+
 ### Added
 
 - When ffmpeg is not found, the status bar now names the install command for
