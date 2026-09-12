@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- When ffmpeg is not found, the status bar now names the install command for
+  the platform it is running on — Homebrew on macOS, winget on Windows, apt on
+  Debian/Ubuntu — and offers to copy it. The route to `unmuteVideo.ffmpegPath`
+  stays alongside it as a second button for anyone pointing at an existing
+  binary. Platforms with no known command keep the previous message and the
+  settings button on its own.
+
+### Changed
+
+- That same status now says to reload the window rather than reopen the file.
+  The ffmpeg lookup is memoized for the life of the extension host, so
+  installing ffmpeg and reopening the file left the video silent and read as
+  though the install had not worked.
+
 ## [0.2.6] - 2026-09-03
 
 Maintenance release. The player itself is unchanged. This publishes the current
