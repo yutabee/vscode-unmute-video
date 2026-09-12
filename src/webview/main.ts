@@ -1,11 +1,11 @@
 "use strict";
 
-import type { HostToWebview, WebviewAction, WebviewToHost } from "../shared/protocol";
+import type { HostToWebview, WebviewToHost } from "../shared/protocol";
 
 import { els } from "./dom";
 import { PlayerController } from "./playerController";
 import { Seekbar } from "./seekbar";
-import { clearStatus, setStatusAction, showStatus } from "./status";
+import { clearStatus, setStatusActions, showStatus, statusActionAt } from "./status";
 
 declare function acquireVsCodeApi(): {
   postMessage(message: WebviewToHost): void;
@@ -23,10 +23,6 @@ controller.setScrubProvider(function () {
   return seekbar.isScrubbing();
 });
 
-// The host action the status-bar button should trigger when shown (e.g. the
-// "Trust workspace" / "Open settings" buttons on the ffmpeg/trust warnings).
-let pendingStatusAction: WebviewAction | null = null;
-
 // ----- Message handling -----
 window.addEventListener("message", function (event: MessageEvent<HostToWebview>) {
   const msg = event.data;
@@ -42,13 +38,29 @@ window.addEventListener("message", function (event: MessageEvent<HostToWebview>)
       controller.setNativeAudio(!!msg.nativeAudio);
       controller.setSeekStep(msg.seekStep);
       controller.applyPreferences(msg.preferences);
-      pendingStatusAction = null;
       if (msg.audioPending) {
         showStatus("Extracting audio…", "loading");
       } else if (msg.ffmpegMissing) {
-        showStatus("Audio needs ffmpeg, which wasn't found. Install it (see README) or set its path in Settings.", "warning");
-        pendingStatusAction = "openFfmpegSettings";
-        setStatusAction("Open settings");
+        // The host caches the "not found" probe for the life of the extension
+        // host, so installing ffmpeg only takes effect after a window reload —
+        // reopening the file would look like the fix did nothing.
+        const hint = msg.ffmpegInstall;
+        if (hint) {
+          showStatus(
+            `Audio needs ffmpeg, which wasn't found. Install it with ${hint.manager} (${hint.command}), then reload the window.`,
+            "warning",
+          );
+          setStatusActions([
+            { label: "Copy command", action: "copyFfmpegCommand" },
+            { label: "Open settings", action: "openFfmpegSettings" },
+          ]);
+        } else {
+          showStatus(
+            "Audio needs ffmpeg, which wasn't found. Install it (see README) or set its path in Settings, then reload the window.",
+            "warning",
+          );
+          setStatusActions([{ label: "Open settings", action: "openFfmpegSettings" }]);
+        }
       } else {
         clearStatus();
       }
@@ -77,8 +89,7 @@ window.addEventListener("message", function (event: MessageEvent<HostToWebview>)
 
     case "audioUntrusted":
       showStatus("Audio is disabled because this workspace isn't trusted.", "warning");
-      pendingStatusAction = "trustWorkspace";
-      setStatusAction("Trust workspace");
+      setStatusActions([{ label: "Trust workspace", action: "trustWorkspace" }]);
       break;
   }
 });
@@ -163,13 +174,19 @@ els.openExternalBtn.addEventListener("click", function () {
 els.copyPathBtn.addEventListener("click", function () {
   vscode.postMessage({ type: "action", name: "copyPath" });
 });
-els.statusAction.addEventListener("click", function () {
-  // Only act when the button is actually visible: a status can be cleared (and
-  // the button hidden) without nulling pendingStatusAction, so guard on hidden
-  // to avoid posting a stale action.
-  if (pendingStatusAction && !els.statusAction.hidden) {
-    vscode.postMessage({ type: "action", name: pendingStatusAction });
+// statusActionAt returns null for a button that is not currently offered, so a
+// status cleared between render and click cannot post a stale action.
+function postStatusAction(index: number): void {
+  const action = statusActionAt(index);
+  if (action !== null) {
+    vscode.postMessage({ type: "action", name: action });
   }
+}
+els.statusAction.addEventListener("click", function () {
+  postStatusAction(0);
+});
+els.statusActionSecondary.addEventListener("click", function () {
+  postStatusAction(1);
 });
 
 // ----- Keyboard shortcuts -----

@@ -34,6 +34,7 @@ export const els = {
   statusSpinner: document.getElementById("statusSpinner") as HTMLElement,
   statusText: document.getElementById("statusText") as HTMLElement,
   statusAction: document.getElementById("statusAction") as HTMLButtonElement,
+  statusActionSecondary: document.getElementById("statusActionSecondary") as HTMLButtonElement,
 
   openExternalBtn: document.getElementById("openExternalBtn") as HTMLButtonElement,
   copyPathBtn: document.getElementById("copyPathBtn") as HTMLButtonElement,
