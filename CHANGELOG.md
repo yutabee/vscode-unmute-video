@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-12
+
 ### Added
 
 - A published page at <https://yutabee.github.io/vscode-unmute-video/> explaining
@@ -269,7 +271,8 @@ Maintenance release. No user-facing behaviour changes.
 - The `unmuteVideo.ffmpegPath` setting is machine-scoped, so a workspace cannot
   redirect the extension to an arbitrary executable.
 
-[Unreleased]: https://github.com/yutabee/vscode-unmute-video/compare/v0.2.6...HEAD
+[Unreleased]: https://github.com/yutabee/vscode-unmute-video/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/yutabee/vscode-unmute-video/compare/v0.2.6...v0.3.0
 [0.2.6]: https://github.com/yutabee/vscode-unmute-video/compare/v0.2.5...v0.2.6
 [0.2.5]: https://github.com/yutabee/vscode-unmute-video/compare/v0.2.4...v0.2.5
 [0.2.4]: https://github.com/yutabee/vscode-unmute-video/compare/v0.2.3...v0.2.4
