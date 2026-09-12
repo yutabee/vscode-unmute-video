@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Updated `js-yaml` to 4.3.2, resolving a high-severity advisory where
+  `maxTotalMergeKeys` did not bound CPU use for empty merge sources, and `qs`
+  to 6.16.0, resolving an array-limit bypass through bracket-key comma parsing
+  and a denial of service through an attacker-controlled `isBuffer`. Both reach
+  the project only through `@vscode/vsce`, which is used for packaging, so none
+  of the affected code ships inside the extension.
+
 ### Added
 
 - When ffmpeg is not found, the status bar now names the install command for
