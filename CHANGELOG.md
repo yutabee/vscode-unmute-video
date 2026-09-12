@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Packaging
+
+- The published `.vsix` no longer carries files only the repository needs. The
+  test helpers under `test-support/`, the GitHub social-preview images and the
+  ESLint config were all being packaged: `test/**` was excluded but its helper
+  directory was not, and `images/icon.svg` and `images/demo.gif` were excluded
+  while `images/social-preview.*` was missed. The download drops from 31 files
+  and 157 KB to 23 files and 54 KB, most of it the 127 KB social preview.
+
 ### Added
 
 - When ffmpeg is not found, the status bar now names the install command for

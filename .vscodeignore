@@ -3,11 +3,14 @@
 .playwright-mcp/**
 src/**
 test/**
+test-support/**
 out/webview/**
 docs/**
 node_modules/**
 images/icon.svg
 images/demo.gif
+images/social-preview.*
+eslint.config.mjs
 **/tsconfig*.json
 **/*.map
 **/*.ts
