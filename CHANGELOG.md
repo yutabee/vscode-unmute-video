@@ -7,15 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Packaging
-
-- The published `.vsix` no longer carries files only the repository needs. The
-  test helpers under `test-support/`, the GitHub social-preview images and the
-  ESLint config were all being packaged: `test/**` was excluded but its helper
-  directory was not, and `images/icon.svg` and `images/demo.gif` were excluded
-  while `images/social-preview.*` was missed. The download drops from 31 files
-  and 157 KB to 23 files and 54 KB, most of it the 127 KB social preview.
-
 ### Added
 
 - When ffmpeg is not found, the status bar now names the install command for
@@ -44,6 +35,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   other two installed the extension and then found their file would not open in
   it. The freed slots went to `playwright` and `screen recording`, both of which
   the player does serve — Playwright records `.webm`, which needs no ffmpeg.
+
+### Security
+
+- Updated `js-yaml` to 4.3.2, resolving a high-severity advisory where
+  `maxTotalMergeKeys` did not bound CPU use for empty merge sources, and `qs`
+  to 6.16.0, resolving an array-limit bypass through bracket-key comma parsing
+  and a denial of service through an attacker-controlled `isBuffer`. Both reach
+  the project only through `@vscode/vsce`, which is used for packaging, so none
+  of the affected code ships inside the extension.
+
+### Packaging
+
+- The published `.vsix` no longer carries files only the repository needs. The
+  test helpers under `test-support/`, the GitHub social-preview images and the
+  ESLint config were all being packaged: `test/**` was excluded but its helper
+  directory was not, and `images/icon.svg` and `images/demo.gif` were excluded
+  while `images/social-preview.*` was missed. The download drops from 31 files
+  and 157 KB to 23 files and 54 KB, most of it the 127 KB social preview.
 
 ## [0.2.6] - 2026-09-03
 
