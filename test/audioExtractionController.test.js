@@ -28,6 +28,12 @@ const originalAudio = {
     resolveFfmpegOverride: audioModule.resolveFfmpegOverride,
 };
 const { resolveSeekStep } = require('../out/shared/config.js');
+const { ffmpegInstallHint } = require('../out/shared/ffmpegInstall.js');
+
+// Resolved rather than hard-coded: the controller reads the real
+// process.platform, so pinning a literal here would pass on macOS and fail on
+// the Linux CI runner.
+const INSTALL_HINT = ffmpegInstallHint(process.platform);
 const { AudioExtractionController } = require('../out/editor/audioExtractionController.js');
 
 const FS_PATH = '/tmp/unmute/clip.mp4';
@@ -133,7 +139,7 @@ test('ffmpeg missing posts init with ffmpegMissing and does not extract', async 
     await sink.waitForPost((m) => m.type === 'init');
 
     assert.deepEqual(sink.posts, [
-        { type: 'init', name: 'clip.mp4', audioPending: false, ffmpegMissing: true, nativeAudio: false, resumeTime: 0, preferences: PREFERENCES, seekStep: 10 },
+        { type: 'init', name: 'clip.mp4', audioPending: false, ffmpegMissing: true, ffmpegInstall: INSTALL_HINT, nativeAudio: false, resumeTime: 0, preferences: PREFERENCES, seekStep: 10 },
     ]);
     assert.deepEqual(findCalls, [undefined]);
     assert.equal(extractCalls, 0);
@@ -153,13 +159,14 @@ test('showPendingStatus posts pending init before later audioSrc', async () => {
         name: 'clip.mp4',
         audioPending: true,
         ffmpegMissing: false,
+        ffmpegInstall: null,
         nativeAudio: false,
         resumeTime: 0,
         preferences: PREFERENCES,
         seekStep: 10,
     });
     assert.deepEqual(sink.posts, [
-        { type: 'init', name: 'clip.mp4', audioPending: true, ffmpegMissing: false, nativeAudio: false, resumeTime: 0, preferences: PREFERENCES, seekStep: 10 },
+        { type: 'init', name: 'clip.mp4', audioPending: true, ffmpegMissing: false, ffmpegInstall: null, nativeAudio: false, resumeTime: 0, preferences: PREFERENCES, seekStep: 10 },
         { type: 'audioSrc', url: 'http://127.0.0.1:0/tok-1' },
     ]);
     assert.equal(findCalls.length, 1);

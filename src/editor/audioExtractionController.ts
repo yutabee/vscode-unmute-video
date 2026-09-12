@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { StreamServer } from '../server/streamServer';
 import { findFfmpeg, extractAudio, resolveFfmpegOverride } from '../media/audio';
+import { ffmpegInstallHint } from '../shared/ffmpegInstall';
 import type { Preferences } from '../shared/preferences';
 import type { HostToWebview } from '../shared/protocol';
 
@@ -91,6 +92,10 @@ export class AudioExtractionController {
             name: path.basename(this.fsPath),
             audioPending,
             ffmpegMissing,
+            // Only resolved while ffmpeg is actually missing: the webview has no
+            // use for it otherwise, and it keeps the platform out of the
+            // messages the webview receives in the normal case.
+            ffmpegInstall: ffmpegMissing ? ffmpegInstallHint(process.platform) : null,
             nativeAudio: false,
             resumeTime: this.resumeTime,
             preferences: this.getPreferences(),

@@ -6,6 +6,7 @@ import { StreamServer } from '../server/streamServer';
 import { AudioExtractionController } from './audioExtractionController';
 import { isNativeAudioFormat } from '../media/mediaFormat';
 import { resolveSeekStep } from '../shared/config';
+import { ffmpegInstallHint } from '../shared/ffmpegInstall';
 import { clampPreferences } from '../shared/preferences';
 import type { Preferences } from '../shared/preferences';
 import { resumeKey } from '../shared/resume';
@@ -90,6 +91,7 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
                 name: path.basename(fsPath),
                 audioPending,
                 ffmpegMissing,
+                ffmpegInstall: ffmpegMissing ? ffmpegInstallHint(process.platform) : null,
                 nativeAudio: initNativeAudio,
                 resumeTime: saved,
                 preferences: currentPreferences(),
@@ -167,6 +169,19 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
                                 });
                             }
                             break;
+                        case 'copyFfmpegCommand': {
+                            // Resolved here rather than taken from the webview:
+                            // the clipboard text must come from the host's own
+                            // platform, not from whatever the webview echoes back.
+                            const hint = ffmpegInstallHint(process.platform);
+                            if (hint === null) {
+                                void vscode.window.showWarningMessage('Unmute Video: no install command is known for this platform. See https://ffmpeg.org/download.html');
+                                break;
+                            }
+                            void vscode.env.clipboard.writeText(hint.command);
+                            void vscode.window.showInformationMessage(`Unmute Video: copied "${hint.command}" to the clipboard.`);
+                            break;
+                        }
                         case 'openFfmpegSettings':
                             void vscode.commands.executeCommand('workbench.action.openSettings', 'unmuteVideo.ffmpegPath').then(undefined, () => {
                                 void vscode.window.showWarningMessage('Unmute Video: could not open settings.');

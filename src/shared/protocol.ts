@@ -9,6 +9,7 @@
  * `out/shared/protocol.js` on the host side).
  */
 
+import type { FfmpegInstallHint } from './ffmpegInstall';
 import type { Preferences } from './preferences';
 
 /** Messages the extension host sends to the webview. */
@@ -18,6 +19,11 @@ export type HostToWebview =
         name: string;
         audioPending: boolean;
         ffmpegMissing: boolean;
+        /**
+         * How to install ffmpeg on this machine, or null when we have no
+         * command for the platform. Only meaningful while `ffmpegMissing`.
+         */
+        ffmpegInstall: FfmpegInstallHint | null;
         nativeAudio: boolean;
         resumeTime: number;
         preferences: Preferences;
@@ -31,7 +37,12 @@ export type HostToWebview =
     | { type: 'audioUntrusted' };
 
 /** Actions the webview can ask the host to perform. */
-export type WebviewAction = 'openExternal' | 'copyPath' | 'trustWorkspace' | 'openFfmpegSettings';
+export type WebviewAction =
+    | 'openExternal'
+    | 'copyPath'
+    | 'trustWorkspace'
+    | 'openFfmpegSettings'
+    | 'copyFfmpegCommand';
 
 /** Messages the webview sends to the extension host. */
 export type WebviewToHost =
