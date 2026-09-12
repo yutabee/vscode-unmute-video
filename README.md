@@ -29,13 +29,13 @@ Play MP4 / MOV / M4V / WebM videos **with sound** directly inside VS Code — au
 
 ## Requirements
 
-Needs [`ffmpeg`](https://ffmpeg.org/) on your `PATH` for MP4/MOV/M4V audio; WebM needs nothing. Without ffmpeg the video still plays, just silently.
+Needs [`ffmpeg`](https://ffmpeg.org/) on your `PATH` for MP4/MOV/M4V audio; WebM needs nothing. Without ffmpeg the video still plays, just silently — the player says so and offers the command for your platform. Install it, then reload the window.
 
 - VS Code `^1.90.0`
 - `ffmpeg` (for `.mp4` / `.mov` / `.m4v` audio):
   - macOS: `brew install ffmpeg`
   - Ubuntu/Debian: `sudo apt install ffmpeg`
-  - Windows: install ffmpeg and ensure `ffmpeg.exe` is reachable
+  - Windows: `winget install Gyan.FFmpeg`
 
 ## Install
 
