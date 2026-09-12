@@ -15,6 +15,7 @@ import type { HostToWebview } from '../shared/protocol';
 export class AudioExtractionController {
     private disposed = false;
     private started = false;
+    private ffmpegMissing = false;
     private audioToken: string | undefined;
 
     constructor(
@@ -50,6 +51,7 @@ export class AudioExtractionController {
             }
 
             if (ffmpeg === null) {
+                this.ffmpegMissing = true;
                 this.postInit(false, true);
                 return;
             }
@@ -75,6 +77,15 @@ export class AudioExtractionController {
                 this.post({ type: 'audioError' });
             }
         });
+    }
+
+    /**
+     * Whether the probe came back empty, i.e. the status bar is currently
+     * offering the install hint. The host gates the clipboard action on this so
+     * the webview cannot ask for a copy while no hint is on screen.
+     */
+    public isFfmpegMissing(): boolean {
+        return this.ffmpegMissing;
     }
 
     /** Stop guarding posts and release the audio token if one was registered. */

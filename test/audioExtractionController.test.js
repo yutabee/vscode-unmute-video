@@ -302,3 +302,29 @@ test('dispose unregisters an already registered audio token', async () => {
     assert.deepEqual(server.calls.register, ['/cache/out.mp3']);
     assert.deepEqual(server.calls.unregister, ['tok-1']);
 });
+
+// The host gates the clipboard action on this flag, so a wrong answer either
+// blocks a copy the user asked for or lets the webview overwrite the clipboard
+// while no hint is on screen.
+test('isFfmpegMissing: false before start, true once the probe comes back empty', async () => {
+    audioModule.findFfmpeg = async () => null;
+    audioModule.extractAudio = async () => '/cache/out.mp3';
+    const { sink, ctl } = makeHarness();
+
+    assert.equal(ctl.isFfmpegMissing(), false);
+
+    ctl.start(false);
+    await sink.waitForPost((m) => m.type === 'init');
+
+    assert.equal(ctl.isFfmpegMissing(), true);
+});
+
+test('isFfmpegMissing: stays false when ffmpeg is found', async () => {
+    installSuccessStubs();
+    const { sink, ctl } = makeHarness();
+
+    ctl.start(false);
+    await sink.waitForPost((m) => m.type === 'audioSrc');
+
+    assert.equal(ctl.isFfmpegMissing(), false);
+});

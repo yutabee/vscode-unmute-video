@@ -447,12 +447,6 @@ html, body {
   cursor: pointer;
 }
 
-/* The first button is pushed right by margin-left:auto; the second only
-   needs to clear it. */
-.status-action + .status-action {
-  margin-left: 6px;
-}
-
 .status-action:hover {
   background: rgba(127, 127, 127, 0.18);
 }

@@ -170,6 +170,13 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
                             }
                             break;
                         case 'copyFfmpegCommand': {
+                            // Only while the hint is actually on screen. Without
+                            // this the webview could overwrite the clipboard at
+                            // any moment - before `ready`, or for a .webm that
+                            // never needed ffmpeg at all.
+                            if (audio === null || !audio.isFfmpegMissing()) {
+                                break;
+                            }
                             // Resolved here rather than taken from the webview:
                             // the clipboard text must come from the host's own
                             // platform, not from whatever the webview echoes back.
