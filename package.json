@@ -144,7 +144,7 @@
     "@eslint/js": "^10.0.0",
     "@types/node": "^26.4.0",
     "@types/vscode": "^1.90.0",
-    "@vscode/vsce": "3.9.2",
+    "@vscode/vsce": "4.0.0",
     "esbuild": "^0.28.2",
     "eslint": "^10.9.1",
     "ovsx": "1.1.1",
