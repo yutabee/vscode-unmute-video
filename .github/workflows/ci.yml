@@ -49,3 +49,28 @@ jobs:
           name: unmute-video-vsix
           path: extension.vsix
           if-no-files-found: error
+
+  # Preserve the repository's required check contexts while the tested runtimes
+  # are maintained independently in the matrix above. Both gates require every
+  # patched-runtime build to succeed; no Node 20 process is started.
+  required-node20-context:
+    name: build (20.x)
+    needs: build
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require all patched-runtime builds
+        env:
+          BUILD_RESULT: ${{ needs.build.result }}
+        run: test "$BUILD_RESULT" = success
+
+  required-node22-context:
+    name: build (22.x)
+    needs: build
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require all patched-runtime builds
+        env:
+          BUILD_RESULT: ${{ needs.build.result }}
+        run: test "$BUILD_RESULT" = success
