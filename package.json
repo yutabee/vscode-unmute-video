@@ -1,7 +1,7 @@
 {
   "name": "unmute-video",
-  "displayName": "Video Player (with Audio) — MP4/MOV/WebM",
-  "description": "Play MP4, MOV, M4V and WebM videos inside VS Code with sound. ffmpeg extracts the audio and keeps it in sync with the muted video, working around the missing AAC codec in the VS Code webview — audio that actually plays, and stays in sync.",
+  "displayName": "Video Player (with Audio) \u2014 MP4/MOV/WebM",
+  "description": "Play MP4, MOV, M4V and WebM videos inside VS Code with sound. ffmpeg extracts the audio and keeps it in sync with the muted video, working around the missing AAC codec in the VS Code webview \u2014 audio that actually plays, and stays in sync.",
   "version": "0.3.0",
   "publisher": "yutabee",
   "license": "MIT",
@@ -146,7 +146,7 @@
     "@types/vscode": "^1.90.0",
     "@vscode/vsce": "4.0.0",
     "esbuild": "^0.28.2",
-    "eslint": "^10.9.1",
+    "eslint": "^10.11.0",
     "ovsx": "1.2.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.70.0"
