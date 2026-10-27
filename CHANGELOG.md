@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-10-27
+
+### Security
+
+- Updated development dependencies `brace-expansion` to 5.0.12, `fast-uri` to
+  3.1.9, `follow-redirects` to 1.16.2, `markdown-it` to 14.3.3, and `undici` to
+  7.30.1 to pick up upstream security fixes. These dependencies are used by
+  development and packaging tools.
+
+### Packaging
+
+- Updated the packaging and publishing tools to `@vscode/vsce` 4.0.0 and `ovsx`
+  1.2.0, along with TypeScript linting tools and GitHub Actions.
+- Development and release builds now use patched Node.js versions, with
+  Node.js 24.22.1 as the default in `.nvmrc` and the release workflow.
+- CI and release builds fetch ffmpeg from Ubuntu's official archive and apply
+  bounded download timeouts and retries to avoid slow Azure mirror transfers.
+- Excluded the development-only `.nvmrc` file from the packaged extension.
+
 ## [0.3.0] - 2026-09-12
 
 ### Added
@@ -271,7 +290,8 @@ Maintenance release. No user-facing behaviour changes.
 - The `unmuteVideo.ffmpegPath` setting is machine-scoped, so a workspace cannot
   redirect the extension to an arbitrary executable.
 
-[Unreleased]: https://github.com/yutabee/vscode-unmute-video/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/yutabee/vscode-unmute-video/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/yutabee/vscode-unmute-video/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/yutabee/vscode-unmute-video/compare/v0.2.6...v0.3.0
 [0.2.6]: https://github.com/yutabee/vscode-unmute-video/compare/v0.2.5...v0.2.6
 [0.2.5]: https://github.com/yutabee/vscode-unmute-video/compare/v0.2.4...v0.2.5
