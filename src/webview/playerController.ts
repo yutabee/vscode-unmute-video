@@ -6,11 +6,13 @@ import { RESUME_END_THRESHOLD_SEC, shouldResume } from "../shared/resume";
 import { FRAME_STEP_SECONDS } from "../shared/config";
 import { nextLoopTarget, type LoopState } from "./abLoop";
 import { BufferingOverlay } from "./bufferingOverlay";
-import { canResumeAudio, DEFAULT_DRIFT_TUNING, driftAction, isBenignPlayError } from "./sync";
+import { canResumeMedia, DEFAULT_DRIFT_TUNING, driftAction, isBenignPlayError } from "./sync";
 import { els } from "./dom";
 import { renderLoopMarkers } from "./seekbar";
 import { clearStatus, flashFeedback, showStatus } from "./status";
 import { clamp, formatTime, latestBufferedEnd } from "./util";
+
+const DRIFT_SEEK_INTERVAL_MS = 4000;
 
 export class PlayerController {
   /** The separate audible mp3 track, created when 'audioSrc' arrives. */
@@ -34,6 +36,10 @@ export class PlayerController {
   // True while the video is held paused *because the audio track underran*. The
   // pause is masked from the UI/progress so it reads as buffering, not a stop.
   private waitingForAudio = false;
+  private bufferingResume: Promise<void> | undefined;
+  private lastDriftSeekAt = -Infinity;
+  // The renderer can be on a different OS from the extension host.
+  private readonly useAudioClock = /\bWindows\b/.test(navigator.userAgent);
   // Stage buffering spinner with a debounce so micro-stalls don't flash it. The
   // debounce/cancel logic lives in a pure BufferingOverlay so it is unit-tested
   // with a fake clock; this only wires it to the CSS class toggle.
@@ -157,6 +163,7 @@ export class PlayerController {
   }
 
   public play(): void {
+    this.bufferingResume = undefined;
     this.userIntendsPlay = true;
     els.video.play().catch(function () { /* ignore autoplay rejections */ });
     if (this.audio) {
@@ -171,6 +178,7 @@ export class PlayerController {
     const wasBufferHeld = this.waitingForAudio;
     this.userIntendsPlay = false;
     this.waitingForAudio = false;
+    this.bufferingResume = undefined;
     els.video.pause();
     if (this.audio) {
       this.audio.pause();
@@ -199,11 +207,12 @@ export class PlayerController {
   }
 
   private resumeAudioWithVideo(): void {
-    if (this.audio && this.videoIsPlaying()) {
-      this.syncAudioToVideo();
-      if (canResumeAudio(this.audio.readyState, this.audio.seeking)) {
-        this.tryPlayAudio();
-      }
+    if (
+      this.audio?.paused && this.userIntendsPlay && this.videoIsPlaying() &&
+      canResumeMedia(els.video.readyState, els.video.seeking) &&
+      canResumeMedia(this.audio.readyState, this.audio.seeking)
+    ) {
+      this.tryPlayAudio();
     }
   }
 
@@ -230,7 +239,11 @@ export class PlayerController {
   // hold the video so it cannot run ahead of silent audio, but mask the pause
   // (waitingForAudio) so it reads as buffering rather than a user stop.
   private holdForAudioBuffering(): void {
-    if (this.audio && this.userIntendsPlay && this.videoIsPlaying()) {
+    if (
+      this.audio && !this.audio.paused && this.userIntendsPlay && this.videoIsPlaying() &&
+      !canResumeMedia(this.audio.readyState, this.audio.seeking)
+    ) {
+      this.bufferingResume = undefined;
       this.waitingForAudio = true;
       els.video.pause();
       this.showBuffering();
@@ -240,27 +253,40 @@ export class PlayerController {
   // The audio track recovered. Release a buffering hold and resume the pair the
   // user still wants playing.
   private resumeAfterAudioBuffering(): void {
-    if (!this.waitingForAudio) {
+    if (!this.audio || !canResumeMedia(this.audio.readyState, this.audio.seeking)) {
       return;
     }
     this.waitingForAudio = false;
-    if (this.userIntendsPlay) {
-      this.syncAudioToVideo();
-      // Keep the spinner up until the video actually resumes (its own 'playing'
-      // handler hides it) so we don't flash "playing, no spinner, silent". If
-      // play() rejects there is no 'playing' event, so drop to a stopped state
-      // here rather than spinning over a frame that will never advance.
-      els.video.play().catch(() => this.dropToPausedFromBuffering());
-      if (this.audio && canResumeAudio(this.audio.readyState, this.audio.seeking)) {
-        this.tryPlayAudio();
-      }
+    if (!this.userIntendsPlay) {
+      return;
     }
+
+    // Leave already-playing audio buffered and let drift correction align the
+    // clocks once video starts advancing again.
+    const attempt = els.video.play();
+    this.bufferingResume = attempt;
+    void attempt.then(
+      () => {
+        if (this.bufferingResume === attempt) {
+          this.bufferingResume = undefined;
+        }
+      },
+      () => {
+        // A later hold or user action can abort this play request.
+        if (this.bufferingResume === attempt) {
+          this.bufferingResume = undefined;
+          this.dropToPausedFromBuffering();
+        }
+      },
+    );
+    this.resumeAudioWithVideo();
   }
 
   // A buffering resume failed to start the video. Reflect a real stop so the UI
   // doesn't keep a spinner over a frame that will never advance.
   private dropToPausedFromBuffering(): void {
     this.userIntendsPlay = false;
+    this.pauseAudioForBuffering();
     this.hideBuffering();
     els.player.classList.remove("is-playing");
     els.player.classList.add("is-paused");
@@ -457,12 +483,9 @@ export class PlayerController {
       showStatus("Audio playback error", "warning");
     });
 
-    // Symmetric buffer coordination: when the audio track underruns, hold the
-    // video so it cannot run ahead of silent audio; when audio is ready again,
-    // release the hold and resume both. Without this the video kept playing
-    // through audio dropouts and the two re-drifted on recovery.
+    // Actual playback underruns hold the other track until both can resume.
+    // A fetch stall can occur while buffered media continues playing.
     this.audio.addEventListener("waiting", () => this.holdForAudioBuffering());
-    this.audio.addEventListener("stalled", () => this.holdForAudioBuffering());
     this.audio.addEventListener("canplay", () => this.onAudioReady());
     this.audio.addEventListener("playing", () => this.onAudioReady());
     this.audio.addEventListener("seeked", () => this.onAudioReady());
@@ -497,33 +520,32 @@ export class PlayerController {
     els.subBtn.setAttribute("aria-pressed", showing ? "true" : "false");
   }
 
-  // Keep the audio track in step with the video clock without re-seeking every
-  // frame: nudge playbackRate for small drift, hard-seek only for large drift.
-  // Policy lives in the pure `driftAction` so it is unit-tested in isolation.
+  // On Windows, keep the audible track at the selected rate and correct the
+  // muted video. Seeking or changing the audio rate during playback can
+  // interrupt the Windows audio output even while the clocks advance.
   private correctDrift(): void {
     if (!this.audio || this.audio.paused || els.video.paused) {
       return;
     }
-    // Don't fight an in-flight seek; the `seeked`/`seeking` handlers resync it.
-    if (this.audio.seeking || els.video.seeking) {
+    if (!canResumeMedia(this.audio.readyState, this.audio.seeking) ||
+        !canResumeMedia(els.video.readyState, els.video.seeking)) {
       return;
     }
     const baseRate = this.SPEEDS[this.speedIndex];
-    const action = driftAction(this.audio.currentTime, els.video.currentTime, baseRate);
-    switch (action.kind) {
-      case "seek":
-        this.audio.currentTime = action.to;
-        this.audio.playbackRate = baseRate;
-        break;
-      case "rate":
-        this.audio.playbackRate = action.playbackRate;
-        break;
-      case "none":
-        // Back in sync: restore the user's intended rate (no-op if unchanged).
-        if (this.audio.playbackRate !== baseRate) {
-          this.audio.playbackRate = baseRate;
-        }
-        break;
+    const now = performance.now();
+    // On a slow decoder, seeking again as soon as drift crosses the threshold
+    // can repeatedly flush audio before it reaches the output.
+    const canSeek = !this.useAudioClock && now - this.lastDriftSeekAt >= DRIFT_SEEK_INTERVAL_MS;
+    const track = this.useAudioClock ? els.video : this.audio;
+    const reference = this.useAudioClock ? this.audio : els.video;
+    const action = driftAction(track.currentTime, reference.currentTime, baseRate, DEFAULT_DRIFT_TUNING, canSeek);
+    if (action.kind === "seek") {
+      this.lastDriftSeekAt = now;
+      track.currentTime = action.to;
+    }
+    const targetRate = action.kind === "rate" ? action.playbackRate : baseRate;
+    if (track.playbackRate !== targetRate) {
+      track.playbackRate = targetRate;
     }
   }
 
@@ -654,11 +676,13 @@ export class PlayerController {
       // A buffering hold pauses the video element but is not a user stop: keep
       // the UI showing playback and leave audio/progress untouched so it reads
       // as buffering. resumeAfterAudioBuffering will resume the pair.
-      if (this.waitingForAudio) {
+      if (this.waitingForAudio || !els.video.paused) {
         return;
       }
       // A genuine stop ends any buffering spinner so it can't linger over the
       // paused frame.
+      this.userIntendsPlay = false;
+      this.bufferingResume = undefined;
       this.hideBuffering();
       els.player.classList.remove("is-playing");
       els.player.classList.add("is-paused");
@@ -681,10 +705,11 @@ export class PlayerController {
     });
 
     els.video.addEventListener("waiting", () => {
-      this.pauseAudioForBuffering();
-      this.showBuffering();
-    });
-    els.video.addEventListener("stalled", () => {
+      // A queued event may arrive after recovery or while the audio track
+      // needs to keep running to release a buffering hold.
+      if (els.video.paused || this.waitingForAudio || canResumeMedia(els.video.readyState, els.video.seeking)) {
+        return;
+      }
       this.pauseAudioForBuffering();
       this.showBuffering();
     });
@@ -694,7 +719,9 @@ export class PlayerController {
       this.clearStageError();
     });
     els.video.addEventListener("canplay", () => {
-      this.hideBuffering();
+      if (!this.waitingForAudio && !this.bufferingResume) {
+        this.hideBuffering();
+      }
       this.clearStageError();
     });
     els.video.addEventListener("loadstart", () => {
@@ -709,6 +736,7 @@ export class PlayerController {
       // restarts from the end instead of being read as a pause.
       this.userIntendsPlay = false;
       this.waitingForAudio = false;
+      this.bufferingResume = undefined;
       // Reaching the end clears any spinner so it doesn't sit over the last frame.
       this.hideBuffering();
       if (this.audio) {

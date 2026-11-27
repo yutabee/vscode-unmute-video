@@ -27,13 +27,20 @@ type SidecarSubtitles = {
  * and a separately-extracted MP3 (via ffmpeg on the host) is played in sync as
  * the audible track. Both media files are streamed from a loopback HTTP server.
  */
-export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider {
+export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider, vscode.Disposable {
     public static readonly viewType = 'unmuteVideo.viewer';
 
-    constructor(
-        private readonly context: vscode.ExtensionContext,
-        private readonly server: StreamServer,
-    ) {}
+    private readonly closeEditors = new Set<() => void>();
+    private disposed = false;
+
+    constructor(private readonly context: vscode.ExtensionContext) {}
+
+    public dispose(): void {
+        this.disposed = true;
+        for (const close of this.closeEditors) {
+            close();
+        }
+    }
 
     public openCustomDocument(uri: vscode.Uri): vscode.CustomDocument {
         // This editor is read-only, so the document is just the uri plus a no-op
@@ -50,6 +57,48 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
         document: vscode.CustomDocument,
         webviewPanel: vscode.WebviewPanel,
     ): Promise<void> {
+        if (this.disposed) {
+            return;
+        }
+
+        // Chromium queues media requests per host and port. Give each panel its
+        // own port so long transfers in other panels can't block its playback.
+        const server = new StreamServer();
+        const subscriptions: vscode.Disposable[] = [];
+        const close = (): void => {
+            if (!this.closeEditors.delete(close)) {
+                return;
+            }
+            try {
+                for (const subscription of subscriptions) {
+                    subscription.dispose();
+                }
+            } finally {
+                server.dispose();
+            }
+        };
+        this.closeEditors.add(close);
+        subscriptions.push(webviewPanel.onDidDispose(close));
+
+        try {
+            await server.start();
+            if (this.closeEditors.has(close)) {
+                this.initializeWebview(document, webviewPanel, server, subscriptions);
+            }
+        } catch (error) {
+            if (this.closeEditors.has(close)) {
+                close();
+                throw error;
+            }
+        }
+    }
+
+    private initializeWebview(
+        document: vscode.CustomDocument,
+        webviewPanel: vscode.WebviewPanel,
+        server: StreamServer,
+        subscriptions: vscode.Disposable[],
+    ): void {
         const fsPath = document.uri.fsPath;
         const stateKey = resumeKey(fsPath);
         const saved = this.context.workspaceState.get<number>(stateKey) ?? 0;
@@ -63,11 +112,8 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
             localResourceRoots: [mediaDir],
         };
 
-        // Register the video with the streaming server.
-        const videoToken = this.server.register(fsPath);
-        const videoUrl = this.server.urlFor(videoToken);
+        const videoUrl = server.urlFor(server.register(fsPath));
         let handledReady = false;
-        let trustListener: vscode.Disposable | undefined;
 
         // Outgoing messages are checked against the shared protocol type.
         const post = (message: HostToWebview): void => {
@@ -76,7 +122,10 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
 
         const currentPreferences = (): Preferences => clampPreferences(this.context.globalState.get(PREFS_KEY));
 
-        const audio = nativeAudio ? null : new AudioExtractionController(this.server, fsPath, post, currentPreferences, saved, seekStep);
+        const audio = nativeAudio ? null : new AudioExtractionController(server, fsPath, post, currentPreferences, saved, seekStep);
+        if (audio !== null) {
+            subscriptions.push(audio);
+        }
 
         const postSidecarSubtitles = (): void => {
             const subtitles = this.readSidecarSubtitles(fsPath);
@@ -127,9 +176,9 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
                     } else {
                         post({ type: 'audioUntrusted' });
                         // start() is a no-op after dispose, so no extra guard here.
-                        trustListener = vscode.workspace.onDidGrantWorkspaceTrust(() => {
+                        subscriptions.push(vscode.workspace.onDidGrantWorkspaceTrust(() => {
                             audio?.start(true);
-                        });
+                        }));
                     }
                     break;
                 }
@@ -211,16 +260,8 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
             }
         });
 
-        webviewPanel.onDidDispose(() => {
-            audio?.dispose();
-            messageListener.dispose();
-            if (trustListener !== undefined) {
-                trustListener.dispose();
-            }
-            this.server.unregister(videoToken);
-        });
-
-        webview.html = this.buildHtml(webview, mediaDir);
+        subscriptions.push(messageListener);
+        webview.html = this.buildHtml(webview, mediaDir, server.getPort());
     }
 
     private readSidecarSubtitles(videoFsPath: string): SidecarSubtitles | undefined {
@@ -250,7 +291,7 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
      * tokens. The CSP must exactly match what the contract specifies so the
      * webview can load media from the loopback server.
      */
-    private buildHtml(webview: vscode.Webview, mediaDir: vscode.Uri): string {
+    private buildHtml(webview: vscode.Webview, mediaDir: vscode.Uri, port: number): string {
         const htmlPath = vscode.Uri.joinPath(mediaDir, 'player.html').fsPath;
         const template = fs.readFileSync(htmlPath, 'utf8');
 
@@ -258,7 +299,6 @@ export class PlayerEditorProvider implements vscode.CustomReadonlyEditorProvider
         const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(mediaDir, 'player.css'));
         const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(mediaDir, 'player.js'));
         const cspSource = webview.cspSource;
-        const port = this.server.getPort();
 
         const csp = [
             "default-src 'none'",

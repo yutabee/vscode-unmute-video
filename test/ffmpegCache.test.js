@@ -13,6 +13,7 @@
 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
+const childProcess = require('node:child_process');
 
 const { findFfmpeg, resetFfmpegCache } = require('../out/media/audio.js');
 const { createCleanup, makeProbeFake, makeTempDir } = require('../test-support');
@@ -72,6 +73,38 @@ test('findFfmpeg(override): an empty/whitespace override behaves like no overrid
   const def = await findFfmpeg();
   assert.equal(await findFfmpeg(''), def, 'empty override -> default');
   assert.equal(await findFfmpeg('   '), def, 'whitespace override -> default');
+});
+
+test('findFfmpeg(): a failed default probe can succeed on the next lookup', async (t) => {
+  resetFfmpegCache();
+  let available = false;
+  t.mock.method(childProcess, 'execFile', (bin, _args, _options, callback) => {
+    queueMicrotask(() => callback(available && bin === 'ffmpeg' ? null : new Error('Unavailable')));
+  });
+
+  assert.equal(await findFfmpeg(), null);
+  available = true;
+  assert.equal(await findFfmpeg(), 'ffmpeg');
+});
+
+test('findFfmpeg(override): retries a timed-out override even when fallback succeeded', async (t) => {
+  resetFfmpegCache();
+  let overrideCalls = 0;
+  t.mock.method(childProcess, 'execFile', (bin, args, options, callback) => {
+    assert.deepEqual(args, ['-version']);
+    assert.equal(options.windowsHide, true);
+    if (process.platform === 'win32') assert.ok(options.timeout > 5000);
+    const error = bin === BOGUS
+      ? (++overrideCalls === 1 ? Object.assign(new Error('Timed out'), { killed: true }) : null)
+      : (bin === 'ffmpeg' ? null : new Error('Unavailable'));
+    queueMicrotask(() => callback(error));
+  });
+
+  assert.deepEqual(await Promise.all([findFfmpeg(BOGUS), findFfmpeg(BOGUS)]), ['ffmpeg', 'ffmpeg']);
+  assert.equal(overrideCalls, 1);
+  assert.equal(await findFfmpeg(BOGUS), BOGUS);
+  assert.equal(await findFfmpeg(BOGUS), BOGUS);
+  assert.equal(overrideCalls, 2);
 });
 
 // --- Probe-count tests (fake ffmpeg). These make "cached"/"deduped" verifiable

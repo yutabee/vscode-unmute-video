@@ -8,8 +8,8 @@
  * `currentTime` is a seek — it flushes the decode buffer and re-fetches — so a
  * steady offset (e.g. mp3 encoder delay) turned every frame into a re-seek,
  * producing audible dropouts and a buffering feedback loop. Instead we nudge the
- * audio `playbackRate` to let it gently catch up or fall back, and only hard-seek
- * when drift is so large that rate-nudging would take too long to converge.
+ * audio `playbackRate` to let it gently catch up or fall back. A large drift
+ * permits a hard seek once the player has given the decoder time to recover.
  */
 
 export interface DriftTuning {
@@ -36,34 +36,36 @@ export type DriftAction =
   | { readonly kind: "seek"; readonly to: number };
 
 /**
- * Decide how to correct audio drift relative to the video clock.
+ * Decide how to correct drift relative to a reference clock.
  *
- * `audioTime` / `videoTime` are the two elements' currentTimes. A positive
- * difference means audio is AHEAD of video. `baseRate` is the user's intended
+ * `trackTime` is the clock being adjusted and `referenceTime` is the clock
+ * it follows. A positive difference means the adjusted track is ahead.
+ * `baseRate` is the user's intended
  * playback speed (1, 1.5, ...). Returns the action the caller should apply.
  */
 export function driftAction(
-  audioTime: number,
-  videoTime: number,
+  trackTime: number,
+  referenceTime: number,
   baseRate: number,
   tuning: DriftTuning = DEFAULT_DRIFT_TUNING,
+  canSeek = true,
 ): DriftAction {
-  if (!Number.isFinite(audioTime) || !Number.isFinite(videoTime)) {
+  if (!Number.isFinite(trackTime) || !Number.isFinite(referenceTime)) {
     return { kind: "none" };
   }
 
-  const diff = audioTime - videoTime;
+  const diff = trackTime - referenceTime;
   const magnitude = Math.abs(diff);
 
-  if (magnitude >= tuning.hard) {
-    return { kind: "seek", to: videoTime };
+  if (canSeek && magnitude >= tuning.hard) {
+    return { kind: "seek", to: referenceTime };
   }
 
   if (magnitude <= tuning.soft) {
     return { kind: "none" };
   }
 
-  // Audio ahead -> slow it down; audio behind -> speed it up. Clamp so the
+  // A track ahead of the reference slows down; one behind speeds up. Clamp so the
   // nudge can never invert or stall playback even with an odd base rate.
   const direction = diff > 0 ? -1 : 1;
   const playbackRate = Math.max(0.0625, baseRate + direction * tuning.rateNudge);
@@ -71,20 +73,19 @@ export function driftAction(
 }
 
 /**
- * Minimum HTMLMediaElement.readyState before starting audio is worth it.
+ * Minimum HTMLMediaElement.readyState before resuming playback.
  * HAVE_FUTURE_DATA (3): enough data to advance at least one frame from the
  * current position. Below this, play() tends to stall or reject and then
  * re-drift on recovery.
  */
-export const AUDIO_READY_THRESHOLD = 3;
+export const MEDIA_READY_THRESHOLD = 3;
 
 /**
- * Whether the audio element is ready enough to start without immediately
- * stalling. Used to gate resume so we wait for `canplay`/`seeked` instead of
- * calling play() on an unbuffered/seeking element.
+ * Whether a media element has data beyond its current position and is ready
+ * to start without immediately stalling.
  */
-export function canResumeAudio(readyState: number, seeking: boolean): boolean {
-  return readyState >= AUDIO_READY_THRESHOLD && !seeking;
+export function canResumeMedia(readyState: number, seeking: boolean): boolean {
+  return readyState >= MEDIA_READY_THRESHOLD && !seeking;
 }
 
 /**

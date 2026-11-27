@@ -11,9 +11,9 @@ const assert = require('node:assert/strict');
 const {
   driftAction,
   DEFAULT_DRIFT_TUNING,
-  canResumeAudio,
+  canResumeMedia,
   isBenignPlayError,
-  AUDIO_READY_THRESHOLD,
+  MEDIA_READY_THRESHOLD,
 } = require('../out/webview/sync.js');
 
 const T = DEFAULT_DRIFT_TUNING; // soft 0.1, hard 1.0, rateNudge 0.05
@@ -64,17 +64,17 @@ test('non-finite clocks -> no correction (never NaN-seek)', () => {
   assert.deepEqual(driftAction(10, Infinity, 1, T), { kind: 'none' });
 });
 
-test('canResumeAudio: ready and not seeking -> true', () => {
-  assert.equal(AUDIO_READY_THRESHOLD, 3); // HAVE_FUTURE_DATA
-  assert.equal(canResumeAudio(3, false), true); // exactly the threshold
-  assert.equal(canResumeAudio(4, false), true); // HAVE_ENOUGH_DATA
+test('canResumeMedia: ready and not seeking -> true', () => {
+  assert.equal(MEDIA_READY_THRESHOLD, 3); // HAVE_FUTURE_DATA
+  assert.equal(canResumeMedia(3, false), true); // exactly the threshold
+  assert.equal(canResumeMedia(4, false), true); // HAVE_ENOUGH_DATA
 });
 
-test('canResumeAudio: under-buffered or seeking -> false (defer to canplay/seeked)', () => {
-  assert.equal(canResumeAudio(2, false), false); // HAVE_CURRENT_DATA, not enough
-  assert.equal(canResumeAudio(0, false), false); // HAVE_NOTHING
-  assert.equal(canResumeAudio(3, true), false); // ready but mid-seek
-  assert.equal(canResumeAudio(4, true), false);
+test('canResumeMedia: under-buffered or seeking -> false (defer to canplay/seeked)', () => {
+  assert.equal(canResumeMedia(2, false), false); // HAVE_CURRENT_DATA, not enough
+  assert.equal(canResumeMedia(0, false), false); // HAVE_NOTHING
+  assert.equal(canResumeMedia(3, true), false); // ready but mid-seek
+  assert.equal(canResumeMedia(4, true), false);
 });
 
 test('isBenignPlayError: autoplay/abort are benign, real failures surface', () => {
