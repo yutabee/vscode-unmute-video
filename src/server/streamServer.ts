@@ -21,9 +21,8 @@ export class StreamServer {
     /** fs path -> token, so register() is idempotent per path */
     private readonly pathToToken = new Map<string, string>();
     /**
-     * token -> how many live holders share it. The same path can back several
-     * editors at once (supportsMultipleEditorsPerDocument), so a token is only
-     * really forgotten when the last holder unregisters it.
+     * token -> how many registrations share it. A token is removed when its
+     * last registration is released.
      */
     private readonly refCount = new Map<string, number>();
 
@@ -36,21 +35,22 @@ export class StreamServer {
             const server = http.createServer((req, res) => {
                 this.handleRequest(req, res);
             });
+            this.server = server;
 
-            // Surface listen-time errors as a rejected promise.
-            const onError = (err: Error) => {
-                reject(err);
+            const onClose = () => {
+                reject(new Error('Media server closed before it started listening.'));
             };
-            server.once('error', onError);
+            server.once('error', reject);
+            server.once('close', onClose);
 
             // Port 0 => OS assigns a free port. Bind to 127.0.0.1 only.
             server.listen(0, '127.0.0.1', () => {
-                server.removeListener('error', onError);
+                server.removeListener('error', reject);
+                server.removeListener('close', onClose);
                 const addr = server.address();
                 if (addr && typeof addr === 'object') {
                     this.port = addr.port;
                 }
-                this.server = server;
                 resolve();
             });
         });
@@ -80,8 +80,7 @@ export class StreamServer {
 
     /**
      * Release one hold on a token. The token (and its path mapping) is only
-     * removed once the last holder releases it, so disposing one editor never
-     * pulls the rug out from another editor still streaming the same file.
+     * removed once its last registration is released.
      */
     public unregister(token: string): void {
         const fsPath = this.tokenToPath.get(token);
@@ -106,6 +105,7 @@ export class StreamServer {
     public dispose(): void {
         if (this.server) {
             this.server.close();
+            this.server.closeAllConnections();
             this.server = undefined;
         }
         this.tokenToPath.clear();
@@ -169,6 +169,9 @@ export class StreamServer {
         }
 
         fs.stat(fsPath, (statErr, stat) => {
+            if (res.destroyed) {
+                return;
+            }
             if (statErr || !stat.isFile()) {
                 // File vanished or is not a regular file.
                 res.writeHead(404);

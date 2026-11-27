@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Give each video editor its own loopback streaming port so media requests
+  from other tabs cannot fill its browser connection queue.
+- Keep audio and video playing through download stalls while buffered media is
+  still available. Pause the other track when playback needs more data.
+- Check both tracks before resuming playback so delayed buffering events and
+  interrupted play requests cannot leave a player paused or silent.
+- Limit automatic audio seeks so repeated drift corrections do not starve the
+  audio decoder on slower systems.
+- Use the audio clock for synchronization on Windows and adjust the muted
+  video's rate to keep audible playback continuous.
+- Give FFmpeg more time to start on Windows and retry failed detection when a
+  video is reopened.
+
 ## [0.3.2] - 2026-11-27
 
 ### Packaging

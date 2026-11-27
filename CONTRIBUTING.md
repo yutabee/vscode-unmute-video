@@ -35,9 +35,9 @@ just isn't tracking it; leave it out of commits and PRs.
 
 | Path | Role |
 | --- | --- |
-| `src/extension.ts` | activation: start the stream server, register the editor + command |
+| `src/extension.ts` | activation: register the editor + command |
 | `src/server/streamServer.ts` | loopback HTTP server, token-gated, HTTP Range streaming |
-| `src/editor/playerEditorProvider.ts` | custom editor: webview wiring, video token, trust handling |
+| `src/editor/playerEditorProvider.ts` | custom editor: per-panel stream server, webview wiring, workspace trust |
 | `src/editor/audioExtractionController.ts` | per-editor audio-extraction lifecycle (ffmpeg → mp3 → stream token) |
 | `src/media/audio.ts` | ffmpeg discovery + audio extraction (no `vscode` import, unit-testable) |
 | `src/shared/protocol.ts` | host ↔ webview message types (type-only module), shared by both ends |

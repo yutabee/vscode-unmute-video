@@ -104,6 +104,44 @@ test('start() assigns a port > 0 and the server answers on 127.0.0.1', async (t)
     assert.equal(res.statusCode, 404);
 });
 
+test('dispose() cancels a pending listen', async (t) => {
+    const server = new StreamServer();
+    t.after(() => server.dispose());
+
+    const started = server.start();
+    server.dispose();
+
+    await assert.rejects(started, /closed before it started listening/);
+    assert.equal(server.getPort(), 0);
+});
+
+test('dispose() aborts an in-flight range response', { timeout: 5000 }, async (t) => {
+    const server = await freshServer(t);
+    const file = makeTempFile('', '.mp4');
+    const size = 32 * 1024 * 1024;
+    fs.truncateSync(file, size);
+
+    const response = await new Promise((resolve, reject) => {
+        const req = http.get(server.urlFor(server.register(file)), {
+            agent: false,
+            headers: { Range: 'bytes=0-' },
+        }, resolve);
+        t.after(() => req.destroy());
+        req.on('error', reject);
+    });
+    assert.equal(response.statusCode, 206);
+    assert.equal(Number(response.headers['content-length']), size);
+
+    const closed = new Promise((resolve) => {
+        response.on('error', () => {});
+        response.once('close', resolve);
+    });
+    server.dispose();
+    response.resume();
+    await closed;
+    assert.equal(response.complete, false);
+});
+
 test('register() is idempotent per path (same path -> same token)', async (t) => {
     const server = await freshServer(t);
     const file = makeTempFile('idempotent', '.mp4');

@@ -34,7 +34,7 @@ CleanShot or QuickTime (`.mp4` / `.mov`), and test videos from Playwright
 
 ## Requirements
 
-Needs [`ffmpeg`](https://ffmpeg.org/) on your `PATH` for MP4/MOV/M4V audio; WebM needs nothing. Without ffmpeg the video still plays, just silently — the player says so and offers the command for your platform. Install it, then reload the window.
+Needs [`ffmpeg`](https://ffmpeg.org/) on your `PATH` for MP4/MOV/M4V audio; WebM needs nothing. Without ffmpeg the video still plays, just silently — the player says so and offers the command for your platform. Reopen the video after configuring FFmpeg. If you updated `PATH`, restart VS Code so it picks up the change.
 
 - VS Code `^1.90.0`
 - `ffmpeg` (for `.mp4` / `.mov` / `.m4v` audio):

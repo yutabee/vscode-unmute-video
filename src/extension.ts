@@ -1,38 +1,22 @@
 import * as vscode from 'vscode';
-import { StreamServer } from './server/streamServer';
 import { PlayerEditorProvider } from './editor/playerEditorProvider';
 import { pruneAudioCache } from './media/audio';
 import { VIDEO_EXTENSIONS } from './media/mediaFormat';
 
 /**
- * Extension entry point. Starts the loopback streaming server, registers the
- * custom video editor, and wires up the `unmuteVideo.open` command.
+ * Registers the custom video editor and the `unmuteVideo.open` command.
  */
-export async function activate(context: vscode.ExtensionContext): Promise<void> {
+export function activate(context: vscode.ExtensionContext): void {
     try {
         pruneAudioCache();
     } catch {
         /* ignore */
     }
 
-    // One streaming server shared by all open editors.
-    const server = new StreamServer();
-    context.subscriptions.push({
-        dispose: () => server.dispose(),
-    });
-    try {
-        await server.start();
-    } catch (err) {
-        // Don't hard-fail activation (which would leave the file in a bare text
-        // editor with no explanation). Surface the error; playback stays
-        // unavailable until the window is reloaded.
-        const detail = err instanceof Error ? err.message : String(err);
-        void vscode.window.showErrorMessage(`Unmute Video: failed to start the media server — ${detail}. Reload the window to retry.`);
-    }
-
-    const provider = new PlayerEditorProvider(context, server);
+    const provider = new PlayerEditorProvider(context);
 
     context.subscriptions.push(
+        provider,
         vscode.window.registerCustomEditorProvider(
             PlayerEditorProvider.viewType,
             provider,

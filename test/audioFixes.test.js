@@ -10,6 +10,7 @@
 
 const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
+const childProcess = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
@@ -37,7 +38,16 @@ after(() => {
   cleanup.run();
 });
 
-test('#3 concurrent extractAudio for the same input runs ffmpeg only once', async () => {
+function runFakeWithNode(t) {
+  const { spawn } = childProcess;
+  t.mock.method(childProcess, 'spawn', (bin, args, options) => {
+    assert.equal(bin, fakeFfmpeg);
+    return spawn(process.execPath, [fakeFfmpeg, ...args], options);
+  });
+}
+
+test('#3 concurrent extractAudio for the same input runs ffmpeg only once', async (t) => {
+  runFakeWithNode(t);
   const input = uniqueInput(workDir);
   const counter = path.join(workDir, `cnt-${crypto.randomBytes(4).toString('hex')}`);
   process.env.UNMUTE_FAKE_COUNTER = counter;
@@ -60,7 +70,8 @@ test('#3 concurrent extractAudio for the same input runs ffmpeg only once', asyn
   }
 });
 
-test('#4 large ffmpeg stderr does not abort extraction', async () => {
+test('#4 large ffmpeg stderr does not abort extraction', async (t) => {
+  runFakeWithNode(t);
   const input = uniqueInput(workDir);
   process.env.UNMUTE_FAKE_STDERR_MB = '4'; // >> execFile default maxBuffer (1MB)
   process.env.UNMUTE_FAKE_DELAY_MS = '0';

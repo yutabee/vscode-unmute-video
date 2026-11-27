@@ -41,13 +41,10 @@ window.addEventListener("message", function (event: MessageEvent<HostToWebview>)
       if (msg.audioPending) {
         showStatus("Extracting audio…", "loading");
       } else if (msg.ffmpegMissing) {
-        // The host caches the "not found" probe for the life of the extension
-        // host, so installing ffmpeg only takes effect after a window reload —
-        // reopening the file would look like the fix did nothing.
         const hint = msg.ffmpegInstall;
         if (hint) {
           showStatus(
-            `Audio needs ffmpeg, which wasn't found. Install it with ${hint.manager} (${hint.command}), then reload the window.`,
+            `FFmpeg could not start. Verify its path in Settings, then reopen the video. To install it, use ${hint.manager} (${hint.command}).`,
             "warning",
           );
           setStatusActions([
@@ -56,7 +53,7 @@ window.addEventListener("message", function (event: MessageEvent<HostToWebview>)
           ]);
         } else {
           showStatus(
-            "Audio needs ffmpeg, which wasn't found. Install it (see README) or set its path in Settings, then reload the window.",
+            "FFmpeg could not start. Install it (see README) or verify its path in Settings, then reopen the video.",
             "warning",
           );
           setStatusActions([{ label: "Open settings", action: "openFfmpegSettings" }]);

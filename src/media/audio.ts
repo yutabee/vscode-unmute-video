@@ -18,8 +18,9 @@ const FFMPEG_CANDIDATES = [
 ];
 const CACHE_DIR = path.join(os.tmpdir(), 'unmute-video-cache');
 const STDERR_TAIL_LIMIT = 16 * 1024;
+const FFMPEG_PROBE_TIMEOUT_MS = process.platform === 'win32' ? 15_000 : 5_000;
 
-const probeResults = new Map<string, string | null>();
+const probeResults = new Map<string, string>();
 const probeInFlight = new Map<string, Promise<string | null>>();
 const inFlightExtractions = new Map<string, Promise<string>>();
 
@@ -108,8 +109,8 @@ function ensureTrailingSeparator(value: string): string {
 
 /**
  * Locate a working ffmpeg binary. Tries common absolute paths and then a bare
- * `ffmpeg` from PATH; the first that responds to `-version` wins. The result
- * (including "not found") is cached.
+ * `ffmpeg` from PATH; the first that responds to `-version` wins. A failed
+ * probe is retried the next time an editor needs audio.
  */
 export async function findFfmpeg(override?: string): Promise<string | null> {
     const overridePath = typeof override === 'string' ? override.trim() : '';
@@ -117,17 +118,16 @@ export async function findFfmpeg(override?: string): Promise<string | null> {
         return memoizedProbe('', probeDefaultFfmpeg);
     }
 
-    return memoizedProbe(overridePath, async () => {
-        if (await probeFfmpeg(overridePath)) {
-            return overridePath;
-        }
-        return findFfmpeg();
-    });
+    const availableOverride = await memoizedProbe(overridePath, async () =>
+        await probeFfmpeg(overridePath) ? overridePath : null,
+    );
+    return availableOverride ?? findFfmpeg();
 }
 
 function memoizedProbe(key: string, compute: () => Promise<string | null>): Promise<string | null> {
-    if (probeResults.has(key)) {
-        return Promise.resolve(probeResults.get(key) as string | null);
+    const cached = probeResults.get(key);
+    if (cached !== undefined) {
+        return Promise.resolve(cached);
     }
     const pending = probeInFlight.get(key);
     if (pending !== undefined) {
@@ -135,7 +135,7 @@ function memoizedProbe(key: string, compute: () => Promise<string | null>): Prom
     }
     const promise = compute()
         .then((result) => {
-            if (probeInFlight.get(key) === promise) {
+            if (result !== null && probeInFlight.get(key) === promise) {
                 probeResults.set(key, result);
             }
             return result;
@@ -160,7 +160,8 @@ async function probeDefaultFfmpeg(): Promise<string | null> {
 
 function probeFfmpeg(bin: string): Promise<boolean> {
     return new Promise<boolean>((resolve) => {
-        execFile(bin, ['-version'], { timeout: 5000 }, (err) => resolve(!err));
+        // Windows startup can be slower on a cold launch or under emulation.
+        execFile(bin, ['-version'], { timeout: FFMPEG_PROBE_TIMEOUT_MS, windowsHide: true }, (err) => resolve(!err));
     });
 }
 
@@ -245,7 +246,7 @@ function runFfmpeg(ffmpeg: string, args: string[]): Promise<void> {
         let timedOut = false;
 
         // spawn with an arg array (no shell) avoids command injection from the file path.
-        const child = spawn(ffmpeg, args, { stdio: ['ignore', 'ignore', 'pipe'] });
+        const child = spawn(ffmpeg, args, { stdio: ['ignore', 'ignore', 'pipe'], windowsHide: true });
         const timer = setTimeout(() => {
             timedOut = true;
             child.kill();

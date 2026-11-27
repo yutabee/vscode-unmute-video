@@ -6,8 +6,7 @@ const path = require('node:path');
 
 // A fake ffmpeg: writes a minimal MP3 to its last arg, optionally emits N MB of
 // stderr, optionally delays, and appends one byte to a counter file per call.
-const EXTRACT_FAKE_SRC = `#!/usr/bin/env node
-const fs = require('fs');
+const EXTRACT_FAKE_SRC = `const fs = require('fs');
 const args = process.argv.slice(2);
 const out = args[args.length - 1];
 const counter = process.env.UNMUTE_FAKE_COUNTER;
@@ -21,13 +20,12 @@ const delay = parseInt(process.env.UNMUTE_FAKE_DELAY_MS || '0', 10);
 setTimeout(() => {
   // "ID3" tag header so it reads as an MP3.
   fs.writeFileSync(out, Buffer.from([0x49, 0x44, 0x33, 0x03, 0, 0, 0, 0, 0, 0]));
-  process.exit(0);
 }, delay);
 `;
 
 function writeExtractFake(dir) {
   const bin = path.join(dir, 'fake-ffmpeg.js');
-  fs.writeFileSync(bin, EXTRACT_FAKE_SRC, { mode: 0o755 });
+  fs.writeFileSync(bin, EXTRACT_FAKE_SRC);
   return bin;
 }
 
